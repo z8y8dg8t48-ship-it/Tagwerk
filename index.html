@@ -166,7 +166,7 @@ button { cursor: pointer; }
 .pill.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 /* ---------- Listen ---------- */
-.lists { flex: 0 0 38%; min-height: 0; background: var(--panel); overflow: auto; display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); grid-auto-rows: minmax(min-content, 1fr); padding: 0 46px; }
+.lists { flex: 0 0 38%; min-height: 0; background: var(--panel); overflow: auto; display: grid; grid-template-columns: repeat(var(--cols, 5), minmax(150px, 1fr)); grid-auto-rows: minmax(min-content, 1fr); padding: 0 46px; }
 #app[data-view="closed"] .lists { display: none; }
 #app[data-view="max"] .week, #app[data-view="max"] .month { display: none; }
 #app[data-view="max"] .lists { flex: 1; }
@@ -242,7 +242,8 @@ dialog.search input:focus { outline: none; border-bottom-color: var(--accent); }
 .toast-btn { border: 0; background: none; color: inherit; text-decoration: underline; padding: 0 0 0 6px; }
 
 @media (max-width: 900px) {
-  .days, .lists { grid-template-columns: repeat(5, 170px); }
+  .days { grid-template-columns: repeat(5, 170px); }
+  .lists { grid-template-columns: repeat(var(--cols, 5), 170px); }
 }
 @media (prefers-reduced-motion: no-preference) {
   .todo, .day, .list-col, .ptab, .ibtn { transition: background-color 0.12s, color 0.12s; }
@@ -337,21 +338,22 @@ dialog textarea { resize: vertical; min-height: 84px; line-height: 20px; font-fa
 
 /* ---------- Priorität ---------- */
 .prio { display: inline-block; margin-right: 5px; color: var(--accent); font-weight: 900; }
-.todo.frist .prio, .mchip.frist .prio { color: #fff; }
+.day .todo.frist .prio, .mchip.frist .prio { color: #fff; }
 
-/* ---------- Fristen: rot hinterlegt ---------- */
-.todo.frist, .mchip.frist { background: var(--frist); color: #fff; }
-.todo.frist { padding-left: 7px; border-bottom-color: rgba(255, 255, 255, 0.35); margin-bottom: 1px; }
-.todo.frist:hover, .mchip.frist:hover { background: color-mix(in srgb, var(--frist) 86%, #000); }
-.todo.frist .todo-text a, .todo.frist .date-prefix, .todo.frist .todo-meta, .todo.frist .ind { color: #fff; }
-.todo.frist .date-prefix { opacity: 0.85; min-width: 36px; }
-.todo.frist .check, .mchip.frist .check { border-color: rgba(255, 255, 255, 0.8); background: transparent; }
-.todo.frist .check:hover, .mchip.frist .check:hover { background: rgba(255, 255, 255, 0.25); border-color: #fff; }
-.todo.frist .pbadge { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7); }
+/* ---------- Fristen: nur im Kalender rot hinterlegt (Woche und Monat), mit runden Ecken ---------- */
+.day .todo.frist, .mchip.frist { background: var(--frist); color: #fff; }
+.day .todo.frist { padding-left: 7px; border-radius: 7px; border-bottom-color: transparent; margin: 1px 0 2px; }
+.mchip.frist { border-radius: 5px; }
+.day .todo.frist:hover, .mchip.frist:hover { background: color-mix(in srgb, var(--frist) 86%, #000); }
+.day .todo.frist .todo-text a, .day .todo.frist .date-prefix, .day .todo.frist .todo-meta, .day .todo.frist .ind { color: #fff; }
+.day .todo.frist .date-prefix { opacity: 0.85; min-width: 36px; }
+.day .todo.frist .check, .mchip.frist .check { border-color: rgba(255, 255, 255, 0.8); background: transparent; }
+.day .todo.frist .check:hover, .mchip.frist .check:hover { background: rgba(255, 255, 255, 0.25); border-color: #fff; }
+.day .todo.frist .pbadge { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7); }
 .frist-flag { flex: none; margin-top: 0; height: 15px; padding: 0 5px; border-radius: 3px; background: #fff; color: var(--frist); font-size: 9.5px; font-weight: 800; letter-spacing: 0.05em; line-height: 15px; text-transform: uppercase; white-space: nowrap; }
 .mchip .frist-flag { margin-top: 1.5px; height: 14px; line-height: 14px; padding: 0 4px; }
 .mchip.frist { padding-left: 3px; }
-.frist-title { color: var(--frist) !important; cursor: default !important; }
+.frist-title { cursor: default !important; }
 
 /* ---------- Trennleiste in Projektfarbe ---------- */
 .band.colored { background: var(--band-bg); color: var(--band-fg); }
@@ -427,6 +429,27 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
 .mempty { color: var(--faint); }
 @media (max-width: 700px) { .band .pill { display: none; } .band .dots { flex: 1; justify-content: center; gap: 8px; min-width: 0; } .row3 { grid-template-columns: 1fr 1fr; } .row3 label:first-child { grid-column: 1 / -1; } }
 
+/* ---------- Mitschriften: Teilnehmer, Leiste, Datumsabfrage ---------- */
+.mbar .seg { margin-left: auto; margin-right: 0; }
+fieldset.people { border: 0; padding: 0; margin: 0 0 12px; }
+fieldset.people legend { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 6px; }
+.plist { display: grid; gap: 6px; }
+.prow { display: grid; grid-template-columns: 1fr 1.3fr 28px; gap: 8px; align-items: center; }
+.prow input { width: 100%; }
+.prow .x { border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; padding: 0; }
+.prow .x:hover { color: var(--accent); }
+.addrow { margin-top: 6px; border: 1px dashed var(--line); background: none; color: var(--muted); border-radius: 6px; padding: 4px 10px; font-size: 13px; }
+.addrow:hover { color: var(--accent); border-color: var(--accent); }
+.ptable { width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 14px; }
+.ptable th, .ptable td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+.ptable th { background: var(--band); font-size: 12px; }
+dialog.small { width: min(380px, calc(100vw - 32px)); }
+dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
+.quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.quick button { border: 1px solid var(--line); background: none; border-radius: 6px; padding: 5px 10px; font-size: 13px; color: var(--text); }
+.quick button:hover { background: var(--band); }
+@media (max-width: 700px) { .prow { grid-template-columns: 1fr 28px; } .prow .porg { grid-column: 1; } .prow .x { grid-row: 1 / span 2; grid-column: 2; } }
+
 </style>
 </head>
 <body>
@@ -501,7 +524,13 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
         <label>Start<input id="min-start" type="time"></label>
         <label>Ende<input id="min-end" type="time"></label>
       </div>
-      <label>Teilnehmer<input id="min-people" type="text" maxlength="1000" autocomplete="off" placeholder="Namen, mit Komma getrennt"></label>
+      <fieldset class="people">
+        <legend>Teilnehmer</legend>
+        <div id="min-people" class="plist"></div>
+        <button type="button" id="min-people-add" class="addrow">+ Teilnehmer</button>
+        <datalist id="org-list"></datalist>
+        <datalist id="name-list"></datalist>
+      </fieldset>
       <div class="mbar">
         <div id="min-tools" class="mtools" role="toolbar" aria-label="Formatierung">
           <button type="button" data-fmt="h1" title="Überschrift 1">Ü1</button>
@@ -523,10 +552,29 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
       <div id="min-preview" class="mpreview" hidden></div>
       <div class="dialog-actions">
         <button type="button" id="min-delete" class="danger">Löschen</button>
+        <button type="button" id="min-word" title="Als Word-Datei (.docx) herunterladen">Word-Export</button>
         <button type="button" id="min-copy" title="Titel, Daten und Text als Text kopieren">Kopieren</button>
         <span class="spacer"></span>
         <button type="button" id="min-cancel">Abbrechen</button>
         <button type="submit" class="primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="date-dialog" class="small">
+    <form method="dialog" id="date-form">
+      <h2 id="date-heading">Wann?</h2>
+      <p class="hint" id="date-task"></p>
+      <label>Datum<input id="date-input" type="date" required></label>
+      <div class="quick">
+        <button type="button" data-quick="0">Heute</button>
+        <button type="button" data-quick="1">Morgen</button>
+        <button type="button" data-quick="7">In einer Woche</button>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" id="date-none">Ohne Datum</button>
+        <span class="spacer"></span>
+        <button type="submit" class="primary">Übernehmen</button>
       </div>
     </form>
   </dialog>
@@ -849,7 +897,7 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
           title: typeof m.title === 'string' ? m.title.slice(0, 200) : '',
           date: typeof m.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.date) ? m.date : todayISO(),
           start: cleanTime(m.start), end: cleanTime(m.end),
-          participants: typeof m.participants === 'string' ? m.participants.slice(0, 1000) : '',
+          participants: cleanPeople(m.participants),
           body: typeof m.body === 'string' ? m.body.slice(0, 200000) : '',
         };
         if (Number.isFinite(m.updatedAt)) min.updatedAt = m.updatedAt;
@@ -989,6 +1037,21 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
   }
 
   // ---------- Mitschriften ----------
+  /** Teilnehmer: Liste aus {name, org}; alte Texte („A, B“) werden zerlegt. */
+  function cleanPeople(v) {
+    let arr = [];
+    if (typeof v === 'string') arr = v.split(/[,;\n]/).map((n) => ({ name: n, org: '' }));
+    else if (Array.isArray(v)) arr = v;
+    const out = [];
+    for (const x of arr) {
+      if (!x || typeof x !== 'object') continue;
+      const name = typeof x.name === 'string' ? x.name.trim().slice(0, 120) : '';
+      const org = typeof x.org === 'string' ? x.org.trim().slice(0, 160) : '';
+      if (name || org) out.push({ name, org });
+      if (out.length >= 80) break;
+    }
+    return out;
+  }
   function cleanTime(v) {
     return typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : '';
   }
@@ -1333,8 +1396,186 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
     todosOnDate, todosInList, listsOf, plannedForProject, nextOrder, nextOrderInList,
     rollover, orderForIndex, moveTodo, moveToList, reorderLists,
     occursOn, materialize, virtualOn, search,
-    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime,
+    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople,
   };
+});
+
+</script>
+  <script>
+'use strict';
+/*
+ * Erzeugt aus einer Mitschrift eine Word-Datei (.docx) – ohne Fremdbibliothek, im Browser und in Node.
+ * Eine .docx ist ein ZIP mit XML-Dateien; hier wird es unkomprimiert („stored“) geschrieben.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(null);
+  else root.Docx = factory(root.Logic);
+})(typeof self !== 'undefined' ? self : this, function (L) {
+  const enc = new TextEncoder();
+
+  // ---------- ZIP ----------
+  const CRC = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(buf) {
+    let c = 0xffffffff;
+    for (let i = 0; i < buf.length; i++) c = CRC[(c ^ buf[i]) & 255] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+  function zip(files, now) {
+    const d = now || new Date();
+    const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+    const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    const chunks = [];
+    const central = [];
+    let offset = 0;
+    const u16 = (v) => [v & 255, (v >>> 8) & 255];
+    const u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+    for (const f of files) {
+      const name = enc.encode(f.name);
+      const data = typeof f.data === 'string' ? enc.encode(f.data) : f.data;
+      const crc = crc32(data);
+      const local = Uint8Array.from([].concat(u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(time), u16(date), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0)));
+      chunks.push(local, name, data);
+      central.push(Uint8Array.from([].concat(u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(time), u16(date), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset))), name);
+      offset += local.length + name.length + data.length;
+    }
+    const cdSize = central.reduce((n, c) => n + c.length, 0);
+    const end = Uint8Array.from([].concat(u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(cdSize), u32(offset), u16(0)));
+    const all = chunks.concat(central, [end]);
+    const out = new Uint8Array(all.reduce((n, c) => n + c.length, 0));
+    let p = 0;
+    for (const c of all) { out.set(c, p); p += c.length; }
+    return out;
+  }
+
+  // ---------- WordprocessingML ----------
+  const esc = (s) => String(s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  function runXml(text, props) {
+    const parts = String(text).split('\n');
+    const rpr = props ? '<w:rPr>' + props + '</w:rPr>' : '';
+    return parts.map((t, i) => '<w:r>' + rpr + (i ? '<w:br/>' : '') + '<w:t xml:space="preserve">' + esc(t) + '</w:t></w:r>').join('');
+  }
+  /** Inline-Auszeichnung (fett, kursiv, Links) → Runs. `rels` sammelt Hyperlink-Beziehungen. */
+  function inline(text, rels, extra) {
+    const base = extra || '';
+    return L.tokenize(text).map((tk) => {
+      if (tk.t === 'bold') return runXml(tk.text, base + '<w:b/>');
+      if (tk.t === 'italic') return runXml(tk.text, base + '<w:i/>');
+      if (tk.t === 'link') {
+        const id = 'rIdL' + (rels.length + 1);
+        rels.push({ id, href: tk.href });
+        return '<w:hyperlink r:id="' + id + '" w:history="1">' + runXml(tk.text, base + '<w:rStyle w:val="Hyperlink"/>') + '</w:hyperlink>';
+      }
+      return runXml(tk.text, base);
+    }).join('');
+  }
+  const para = (runs, ppr) => '<w:p>' + (ppr ? '<w:pPr>' + ppr + '</w:pPr>' : '') + runs + '</w:p>';
+
+  function cell(width, content, shade) {
+    return '<w:tc><w:tcPr><w:tcW w:w="' + width + '" w:type="dxa"/>' + (shade ? '<w:shd w:val="clear" w:color="auto" w:fill="' + shade + '"/>' : '') + '</w:tcPr>' + content + '</w:tc>';
+  }
+  function participantsTable(list) {
+    const w1 = 4200;
+    const w2 = 5438;
+    const head = '<w:tr><w:trPr><w:tblHeader/></w:trPr>' + cell(w1, para(runXml('Name', '<w:b/>'), '<w:spacing w:after="40"/>'), 'EDEDED') + cell(w2, para(runXml('Firma / Gemeinde / Behörde', '<w:b/>'), '<w:spacing w:after="40"/>'), 'EDEDED') + '</w:tr>';
+    const rows = list.map((p) => '<w:tr><w:trPr><w:cantSplit/></w:trPr>' + cell(w1, para(runXml(p.name), '<w:spacing w:after="40"/>')) + cell(w2, para(runXml(p.org || ''), '<w:spacing w:after="40"/>')) + '</w:tr>').join('');
+    const b = (n) => '<w:' + n + ' w:val="single" w:sz="4" w:space="0" w:color="BFBFBF"/>';
+    return '<w:tbl><w:tblPr><w:tblW w:w="' + (w1 + w2) + '" w:type="dxa"/><w:tblBorders>' + b('top') + b('left') + b('bottom') + b('right') + b('insideH') + b('insideV') + '</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr>'
+      + '<w:tblGrid><w:gridCol w:w="' + w1 + '"/><w:gridCol w:w="' + w2 + '"/></w:tblGrid>' + head + rows + '</w:tbl>';
+  }
+
+  /**
+   * @param {{title:string, project?:string, dateText?:string, timeText?:string, participants?:{name:string,org:string}[], body?:string}} m
+   * @returns {Uint8Array} Inhalt der .docx-Datei
+   */
+  function build(m) {
+    const rels = [];
+    const nums = []; // Start der nummerierten Listen (je Liste eine eigene Nummerierung)
+    const out = [];
+    out.push(para(runXml(m.title || 'Besprechung'), '<w:pStyle w:val="Title"/>'));
+    const info = (label, value) => para(runXml(label, '<w:b/>') + '<w:r><w:tab/></w:r>' + runXml(value), '<w:tabs><w:tab w:val="left" w:pos="1700"/></w:tabs><w:spacing w:after="40"/>');
+    if (m.project) out.push(info('Projekt', m.project));
+    if (m.dateText) out.push(info('Datum', m.dateText));
+    if (m.timeText) out.push(info('Zeit', m.timeText));
+    const people = (m.participants || []).filter((p) => p && p.name);
+    if (people.length) {
+      out.push(para(runXml('Teilnehmer', '<w:b/>'), '<w:keepNext/><w:spacing w:before="200" w:after="80"/>'));
+      out.push(participantsTable(people));
+    }
+    out.push(para('', '<w:spacing w:after="120"/>'));
+
+    for (const b of L.parseBlocks(m.body || '')) {
+      if (b.t === 'h') out.push(para(inline(b.text, rels), '<w:pStyle w:val="Heading' + b.level + '"/>'));
+      else if (b.t === 'hr') out.push(para('', '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="A6A6A6"/></w:pBdr><w:spacing w:after="160"/>'));
+      else if (b.t === 'p') out.push(para(inline(b.text, rels)));
+      else {
+        let numId = 1;
+        if (b.t === 'ol') { nums.push(b.start || 1); numId = nums.length + 1; }
+        const task = b.items.some((i) => i.task !== null);
+        for (const it of b.items) {
+          if (it.task !== null) {
+            out.push(para('<w:r><w:rPr><w:rFonts w:ascii="Segoe UI Symbol" w:hAnsi="Segoe UI Symbol"/></w:rPr><w:t>' + (it.task ? '☑' : '☐') + '</w:t></w:r><w:r><w:tab/></w:r>' + inline(it.text, rels), '<w:tabs><w:tab w:val="left" w:pos="720"/></w:tabs><w:spacing w:after="60"/><w:ind w:left="720" w:hanging="360"/>'));
+          } else {
+            out.push(para(inline(it.text, rels), '<w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="' + numId + '"/></w:numPr>'));
+          }
+        }
+        if (task) out.push('');
+      }
+    }
+    const sect = '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>';
+    const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+    const document = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ' + NS + '><w:body>' + out.join('') + sect + '</w:body></w:document>';
+
+    const docRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      + '<Relationship Id="rIdS" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+      + '<Relationship Id="rIdN" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>'
+      + rels.map((r) => '<Relationship Id="' + r.id + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="' + esc(r.href) + '" TargetMode="External"/>').join('')
+      + '</Relationships>';
+
+    const lvl = (fmt, text, font) => '<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="' + fmt + '"/><w:lvlText w:val="' + text + '"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr>' + (font ? '<w:rPr><w:rFonts w:ascii="' + font + '" w:hAnsi="' + font + '" w:hint="default"/></w:rPr>' : '') + '</w:lvl>';
+    const numbering = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:numbering ' + NS + '>'
+      + '<w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="singleLevel"/>' + lvl('bullet', '•', 'Calibri') + '</w:abstractNum>'
+      + '<w:abstractNum w:abstractNumId="1"><w:multiLevelType w:val="singleLevel"/>' + lvl('decimal', '%1.') + '</w:abstractNum>'
+      + '<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>'
+      + nums.map((start, i) => '<w:num w:numId="' + (i + 2) + '"><w:abstractNumId w:val="1"/><w:lvlOverride w:ilvl="0"><w:startOverride w:val="' + start + '"/></w:lvlOverride></w:num>').join('')
+      + '</w:numbering>';
+
+    const hs = (n, size, before) => '<w:style w:type="paragraph" w:styleId="Heading' + n + '"><w:name w:val="heading ' + n + '"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="' + before + '" w:after="80"/><w:outlineLvl w:val="' + (n - 1) + '"/></w:pPr><w:rPr><w:b/><w:sz w:val="' + size + '"/></w:rPr></w:style>';
+    const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ' + NS + '>'
+      + '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="de-DE"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'
+      + '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>'
+      + '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="160"/></w:pPr><w:rPr><w:b/><w:sz w:val="40"/></w:rPr></w:style>'
+      + hs(1, 30, 280) + hs(2, 26, 220) + hs(3, 23, 180)
+      + '<w:style w:type="paragraph" w:styleId="ListParagraph"><w:name w:val="List Paragraph"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="60"/></w:pPr></w:style>'
+      + '<w:style w:type="character" w:styleId="Hyperlink"><w:name w:val="Hyperlink"/><w:rPr><w:color w:val="0563C1"/><w:u w:val="single"/></w:rPr></w:style>'
+      + '</w:styles>';
+
+    const types = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+      + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'
+      + '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+      + '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
+      + '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/></Types>';
+    const rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+
+    return zip([
+      { name: '[Content_Types].xml', data: types },
+      { name: '_rels/.rels', data: rootRels },
+      { name: 'word/document.xml', data: document },
+      { name: 'word/_rels/document.xml.rels', data: docRels },
+      { name: 'word/styles.xml', data: styles },
+      { name: 'word/numbering.xml', data: numbering },
+    ]);
+  }
+
+  return { build, zip, crc32 };
 });
 
 </script>
@@ -1723,7 +1964,11 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
   const mobileMq = window.matchMedia ? window.matchMedia('(max-width: 700px)') : { matches: false };
   if (mobileMq.addEventListener) mobileMq.addEventListener('change', () => render());
   const isMobile = () => !!mobileMq.matches;
-  const perPage = () => (isMobile() ? 999 : showPlanned() ? 4 : 5);
+  /** Spalten pro Seite im unteren Bereich: richtet sich nach der Fensterbreite (3 bis 6). */
+  const perPage = () => (isMobile() ? 999 : Math.max(3, Math.min(6, Math.floor((window.innerWidth - 92) / 220))));
+  let lastPer = perPage();
+  window.addEventListener('resize', () => { const n = perPage(); if (n !== lastPer) { lastPer = n; render(); } });
+  const PLANNED = { planned: true, id: 'planned' };
   const MINUTES = { minutes: true, id: 'minutes' }; // Platzhalter-Spalte „Mitschriften“ hinter „Fristen“
 
   let toastTimer = null;
@@ -1781,10 +2026,8 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
     const list = where.listId ? listById(where.listId) : null;
     const projectId = parsed.projectId !== undefined ? parsed.projectId : list ? list.projectId : null;
     if (list && parsed.date === undefined) date = null;
-    if (list && list.deadline && !date) {
-      date = L.addDays(today, 7);
-      toast('Keine Frist angegeben: auf ' + fmtShort.format(L.parseISO(date)) + ' gesetzt. Zum Ändern anklicken (oder beim Tippen @Datum nutzen).');
-    }
+    const ask = !!list && parsed.date === undefined; // in Listen ohne @Datum: nachfragen
+    if (list && list.deadline && !date) date = L.addDays(today, 7); // Vorschlag für Fristen, im Dialog änderbar
     if (!date && !list) date = today;
     const todo = {
       id: L.uid(), text: parsed.text, date, listId: list ? list.id : null, projectId, done: false,
@@ -1793,8 +2036,42 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
     if (parsed.prio) todo.prio = true;
     state.todos.push(todo);
     saveSoon();
+    if (ask && !L.isHeading(todo.text)) setTimeout(() => askDate(todo.id, !!(list && list.deadline)), 0);
     return true;
   }
+
+  // ---------- Dialog: Datum abfragen ----------
+  const dateDlg = $('#date-dialog');
+  let dateCtx = null;
+  function askDate(id, mustHave) {
+    const t = state.todos.find((x) => x.id === id);
+    if (!t || dateDlg.open) return;
+    dateCtx = { id, mustHave };
+    $('#date-heading').textContent = mustHave ? 'Frist bis wann?' : 'Wann soll das erledigt werden?';
+    $('#date-task').textContent = t.text;
+    $('#date-input').value = t.date || '';
+    $('#date-none').hidden = mustHave;
+    dateDlg.showModal();
+    $('#date-input').focus();
+  }
+  dateDlg.addEventListener('click', (e) => {
+    const q = e.target.closest('button[data-quick]');
+    if (q) $('#date-input').value = L.addDays(today, Number(q.dataset.quick));
+  });
+  dateDlg.addEventListener('close', () => { dateCtx = null; if (ui.lastFill) ui.focus = ui.lastFill; ui.lastFill = null; render(); });
+  $('#date-none').addEventListener('click', () => dateDlg.close());
+  $('#date-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const t = dateCtx && state.todos.find((x) => x.id === dateCtx.id);
+    const v = $('#date-input').value;
+    if (t && v) {
+      t.date = v;
+      t.order = L.nextOrder(state, v);
+      delete t.origDate;
+      saveSoon();
+    }
+    dateDlg.close();
+  });
   function toggleTodo(id) {
     const t = state.todos.find((x) => x.id === id);
     if (!t) return;
@@ -1992,7 +2269,7 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
         e.preventDefault();
         const v = inp.value;
         inp.value = '';
-        if (add(v)) { ui.focus = focusKey; render(); }
+        if (add(v)) { ui.focus = focusKey; ui.lastFill = focusKey; render(); }
       } else if (e.key === 'Escape') inp.blur();
     });
     inp.addEventListener('blur', () => {
@@ -2207,8 +2484,11 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
   // ---------- Band und Listen ----------
   function pageInfo() {
     const lists = L.listsOf(state, curProject().id);
-    const entries = lists.slice();
-    entries.splice(lists.length && lists[0].deadline ? 1 : 0, 0, MINUTES);
+    // Reihenfolge: Fristen, Geplant, eigene Listen („Aufgaben“), Mitschriften
+    const entries = [];
+    if (lists.length && lists[0].deadline) entries.push(lists[0]);
+    if (showPlanned()) entries.push(PLANNED);
+    entries.push(...lists.filter((l) => !(l.deadline && entries.includes(l))), MINUTES);
     const per = perPage();
     const pages = Math.max(1, Math.ceil(entries.length / per));
     ui.page = Math.max(0, Math.min(ui.page, pages - 1));
@@ -2216,8 +2496,7 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
   }
   /** Anzahl der Spalten unten (für die Punkte beim Wischen auf dem Handy). */
   function mobileColCount() {
-    const { entries } = pageInfo();
-    return entries.length + (showPlanned() ? 1 : 0);
+    return pageInfo().entries.length;
   }
 
   function band() {
@@ -2259,7 +2538,7 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
     const l = { id: L.uid(), projectId: p.id, name: 'Neue Liste', order: lists.length ? lists[lists.length - 1].order + 1 : 1 };
     state.lists.push(l);
     if (ui.mode === 'closed') ui.mode = 'open';
-    ui.page = Math.floor((lists.length + 1) / perPage());
+    ui.page = Math.floor(pageInfo().entries.findIndex((x) => x.id === l.id) / perPage());
     ui.mcol = 999;
     ui.renamingList = l.id;
     ui.focus = 'rename';
@@ -2283,15 +2562,15 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
     const p = curProject();
     const { entries, per, pages } = pageInfo();
     const cols = [];
-    if (showPlanned()) cols.push(plannedColumn(p));
     const visible = entries.slice(ui.page * per, ui.page * per + per);
-    visible.forEach((l) => cols.push(l.minutes ? minutesColumn(p) : listColumn(l)));
-    if (!isMobile() && cols.length < 5 && ui.page === pages - 1) {
+    visible.forEach((l) => cols.push(l.minutes ? minutesColumn(p) : l.planned ? plannedColumn(p) : listColumn(l)));
+    if (!isMobile() && cols.length < per && ui.page === pages - 1) {
       cols.push(h('div', { class: 'list-col' },
         h('div', { class: 'list-head new-list' }, h('button', { type: 'button', onclick: addList }, '+ Neue Liste')),
         h('div', { class: 'fill' })));
     }
     const section = h('section', { class: 'lists', 'aria-label': 'Listen von ' + p.name }, cols);
+    section.style.setProperty('--cols', String(per));
     if (isMobile()) {
       // Wischen: ein Fenster pro Spalte; Punkte im Band folgen der Position, Position bleibt beim Neuzeichnen erhalten
       const place = () => { section.scrollLeft = Math.min(ui.mcol || 0, cols.length - 1) * section.clientWidth; };
@@ -2312,6 +2591,7 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
 
   // ---------- Mitschriften ----------
   const fmtMin = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const personText = (x) => (x.org ? x.name + ' – ' + x.org : x.name);
   const timeSpan = (m) => (m.start && m.end ? m.start + '–' + m.end : m.start ? 'ab ' + m.start : m.end ? 'bis ' + m.end : '');
   function minutesColumn(p) {
     const list = L.minutesOf(state, p.id);
@@ -2320,7 +2600,7 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
       const li = h('li', { class: 'mcard', tabindex: '0', title: 'Mitschrift öffnen' },
         h('div', { class: 'mtitle' }, m.title || 'Besprechung'),
         h('div', { class: 'mmeta' }, fmtMin.format(L.parseISO(m.date)) + (timeSpan(m) ? ' · ' + timeSpan(m) : '')),
-        m.participants ? h('div', { class: 'mpeople' }, '👥 ' + m.participants) : null,
+        m.participants.length ? h('div', { class: 'mpeople', title: m.participants.map(personText).join('\n') }, '👥 ' + m.participants.map((x) => x.name || x.org).join(', ')) : null,
         preview ? h('div', { class: 'mprev' }, preview) : null);
       li.addEventListener('click', () => openMinute(m.id));
       li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMinute(m.id); } });
@@ -2544,8 +2824,52 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
     $('#min-tools').hidden = on;
     $('#min-mode-edit').setAttribute('aria-pressed', String(!on));
     $('#min-mode-view').setAttribute('aria-pressed', String(on));
-    if (on) $('#min-preview').replaceChildren(blocksView(minBody.value));
+    if (on) {
+      const people = readPeople();
+      const tbl = people.length
+        ? h('table', { class: 'ptable' }, h('thead', {}, h('tr', {}, h('th', {}, 'Name'), h('th', {}, 'Firma / Gemeinde / Behörde'))),
+          h('tbody', {}, people.map((x) => h('tr', {}, h('td', {}, x.name), h('td', {}, x.org)))))
+        : null;
+      $('#min-preview').replaceChildren(...[tbl, blocksView(minBody.value)].filter(Boolean));
+    }
   }
+  const peopleBox = $('#min-people');
+  function personRow(x) {
+    const name = h('input', { type: 'text', class: 'pname', maxlength: '120', placeholder: 'Name', 'aria-label': 'Name', autocomplete: 'off', list: 'name-list' });
+    const org = h('input', { type: 'text', class: 'porg', maxlength: '160', placeholder: 'Firma / Gemeinde / Behörde', 'aria-label': 'Firma, Gemeinde oder Behörde', autocomplete: 'off', list: 'org-list' });
+    name.value = x ? x.name : '';
+    org.value = x ? x.org : '';
+    name.addEventListener('change', () => { // bekannte Person: Firma übernehmen
+      if (org.value.trim()) return;
+      const known = state.minutes.flatMap((mm) => mm.participants).find((q) => q.name.toLowerCase() === name.value.trim().toLowerCase() && q.org);
+      if (known) org.value = known.org;
+    });
+    const row = h('div', { class: 'prow' }, name, org, h('button', { type: 'button', class: 'x', title: 'Teilnehmer entfernen', 'aria-label': 'Teilnehmer entfernen', onclick: () => { row.remove(); minDirty = true; } }, '×'));
+    const next = (e) => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();
+      const rows = [...peopleBox.children];
+      const i = rows.indexOf(row);
+      if (e.target === name) { org.focus(); return; }
+      if (i === rows.length - 1) addPerson(true); else rows[i + 1].querySelector('.pname').focus();
+    };
+    name.addEventListener('keydown', next);
+    org.addEventListener('keydown', next);
+    return row;
+  }
+  function addPerson(focus) {
+    const r = personRow(null);
+    peopleBox.append(r);
+    if (focus) r.querySelector('.pname').focus();
+  }
+  function fillPeople(list) {
+    $('#org-list').replaceChildren(...[...new Set(state.minutes.flatMap((mm) => mm.participants.map((q) => q.org)).filter(Boolean))].map((o) => h('option', { value: o })));
+    $('#name-list').replaceChildren(...[...new Set(state.minutes.flatMap((mm) => mm.participants.map((q) => q.name)).filter(Boolean))].map((o) => h('option', { value: o })));
+    peopleBox.replaceChildren(...(list.length ? list : [null]).map(personRow));
+  }
+  const readPeople = () => L.cleanPeople([...peopleBox.children].map((r) => ({ name: r.querySelector('.pname').value, org: r.querySelector('.porg').value })));
+  $('#min-people-add').addEventListener('click', () => addPerson(true));
+
   function openMinute(id) {
     const m = id ? state.minutes.find((x) => x.id === id) : null;
     if (id && !m) return;
@@ -2556,7 +2880,7 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
     $('#min-date').value = m ? m.date : today;
     $('#min-start').value = m ? m.start : String(now.getHours()).padStart(2, '0') + ':' + String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0');
     $('#min-end').value = m ? m.end : '';
-    $('#min-people').value = m ? m.participants : '';
+    fillPeople(m ? m.participants : []);
     minBody.value = m ? m.body : '';
     $('#min-delete').hidden = !m;
     minDirty = false;
@@ -2585,7 +2909,7 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
     const end = $('#min-end').value;
     if (!date) { toast('Bitte ein Datum wählen.'); return; }
     if (start && end && end < start) { toast('Das Ende liegt vor dem Start.'); return; }
-    const data = { title: $('#min-title').value.trim(), date, start, end, participants: $('#min-people').value.trim(), body: minBody.value.replace(/\s+$/, '') };
+    const data = { title: $('#min-title').value.trim(), date, start, end, participants: readPeople(), body: minBody.value.replace(/\s+$/, '') };
     const m = minCtx.id ? state.minutes.find((x) => x.id === minCtx.id) : null;
     if (m) Object.assign(m, data);
     else state.minutes.push(Object.assign({ id: L.uid(), projectId: minCtx.projectId }, data));
@@ -2605,9 +2929,32 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
     const d = $('#min-date').value;
     const t = timeSpan({ start: $('#min-start').value, end: $('#min-end').value });
     lines.push('Datum: ' + (d ? fmtMin.format(L.parseISO(d)) : '') + (t ? ', ' + t : ''));
-    if ($('#min-people').value.trim()) lines.push('Teilnehmer: ' + $('#min-people').value.trim());
+    const people = readPeople();
+    if (people.length) lines.push('Teilnehmer:', ...people.map((x) => '- ' + personText(x)));
     const text = lines.join('\n') + '\n\n' + minBody.value;
     try { await navigator.clipboard.writeText(text); toast('Mitschrift kopiert.'); } catch (err) { toast('Kopieren war nicht möglich.'); }
+  });
+
+  $('#min-word').addEventListener('click', () => {
+    if (!window.Docx) { toast('Der Word-Export ist hier nicht verfügbar.'); return; }
+    const date = $('#min-date').value;
+    const title = $('#min-title').value.trim() || 'Besprechung';
+    const bytes = window.Docx.build({
+      title,
+      project: (projectById(minCtx ? minCtx.projectId : curProject().id) || curProject()).name,
+      dateText: date ? new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(L.parseISO(date)) : '',
+      timeText: timeSpan({ start: $('#min-start').value, end: $('#min-end').value }) ? timeSpan({ start: $('#min-start').value, end: $('#min-end').value }) + ' Uhr' : '',
+      participants: readPeople(),
+      body: minBody.value,
+    });
+    const safe = title.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || 'Mitschrift';
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const a = h('a', { href: URL.createObjectURL(blob), download: 'Mitschrift ' + (date || today) + ' ' + safe + '.docx' });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('Word-Datei erstellt.');
   });
 
   // Formatierung im Textfeld (Markdown-Auszeichnung)
@@ -3015,7 +3362,7 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
       ui.projectId = l.projectId;
       if (ui.mode === 'closed') ui.mode = 'open';
       const idx = L.listsOf(state, l.projectId).findIndex((x) => x.id === l.id);
-      ui.page = Math.floor((idx > 0 ? idx + 1 : idx) / perPage());
+      ui.page = Math.floor(pageInfo().entries.findIndex((x) => x.id === l.id) / perPage());
     }
     render();
   }
