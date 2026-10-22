@@ -83,7 +83,7 @@ button { cursor: pointer; }
 .ibtn.on { color: var(--accent); }
 
 /* ---------- Wochenblatt ---------- */
-.week { position: relative; flex: 1 1 60%; min-height: 0; display: flex; }
+.week { position: relative; flex: 1 1 0; min-height: 0; display: flex; }
 .days { flex: 1; min-width: 0; margin: 0 46px; overflow: auto; display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); grid-auto-rows: minmax(min-content, 1fr); }
 .day { display: flex; flex-direction: column; padding: 0 18px 12px; min-width: 0; }
 .col-head { padding: 20px 0 12px; }
@@ -166,7 +166,7 @@ button { cursor: pointer; }
 .pill.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 /* ---------- Listen ---------- */
-.lists { flex: 0 0 38%; min-height: 0; background: var(--panel); overflow: auto; display: grid; grid-template-columns: repeat(var(--cols, 5), minmax(150px, 1fr)); grid-auto-rows: minmax(min-content, 1fr); padding: 0 46px; }
+.lists { flex: 1 1 0; min-height: 0; background: var(--panel); overflow: auto; display: grid; grid-template-columns: repeat(var(--cols, 5), minmax(150px, 1fr)); grid-auto-rows: minmax(min-content, 1fr); padding: 0 46px; }
 #app[data-view="closed"] .lists { display: none; }
 #app[data-view="max"] .week, #app[data-view="max"] .month { display: none; }
 #app[data-view="max"] .lists { flex: 1; }
@@ -188,9 +188,9 @@ button { cursor: pointer; }
 .planned-title { color: var(--accent) !important; }
 
 /* ---------- Projekt-Tabs ---------- */
-.tabs { flex: none; display: flex; align-items: stretch; height: 28px; border-top: 1px solid var(--line); background: var(--bg); padding-left: 10px; }
-.ptabs { display: flex; align-items: stretch; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.ptab { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 0 12px; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.tabs { flex: none; display: flex; align-items: flex-start; min-height: 28px; border-top: 1px solid var(--line); background: var(--bg); padding-left: 10px; }
+.ptabs { display: flex; flex-wrap: wrap; align-items: stretch; flex: 1; min-width: 0; }
+.ptab { height: 28px; display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 0 12px; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .ptab:hover { color: var(--text); }
 .ptab[aria-current="page"] { background: var(--band); color: var(--text); }
 .ptab .count { font-weight: 600; color: var(--muted); }
@@ -198,7 +198,9 @@ button { cursor: pointer; }
 .ptab .more:hover { background: var(--faint); color: var(--text); }
 .ptab .more svg { width: 12px; height: 12px; fill: currentColor; }
 .ptab.drop-target { background: var(--accent-soft); color: var(--text); }
-.tabs .tail { display: flex; align-items: center; padding-right: 10px; }
+.tabs .tail { display: flex; align-items: center; height: 28px; padding-right: 10px; }
+.ptab.insert-left { box-shadow: inset 3px 0 0 var(--accent); }
+.ptab.insert-right { box-shadow: inset -3px 0 0 var(--accent); }
 
 /* ---------- Menü ---------- */
 .menu { position: fixed; z-index: 30; min-width: 190px; background: var(--menu-bg); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); padding: 4px; }
@@ -275,7 +277,7 @@ dialog textarea { resize: vertical; min-height: 84px; line-height: 20px; font-fa
 .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
 
 /* ---------- Monatsansicht ---------- */
-.month { position: relative; flex: 1 1 60%; min-height: 0; display: flex; }
+.month { position: relative; flex: 1 1 0; min-height: 0; display: flex; }
 .mwrap { flex: 1; min-width: 0; margin: 0 46px; display: flex; flex-direction: column; }
 .mtitle { margin: 0; padding: 8px 0 6px 6px; font: 400 31px/30px var(--head); text-transform: uppercase; flex: none; }
 .mtitle span { color: var(--muted); }
@@ -449,6 +451,14 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 .quick button { border: 1px solid var(--line); background: none; border-radius: 6px; padding: 5px 10px; font-size: 13px; color: var(--text); }
 .quick button:hover { background: var(--band); }
 @media (max-width: 700px) { .prow { grid-template-columns: 1fr 28px; } .prow .porg { grid-column: 1; } .prow .x { grid-row: 1 / span 2; grid-column: 2; } }
+
+/* ---------- Leiste: Symbole statt Schaltfläche ---------- */
+.band .right { gap: 2px; }
+.band .pageno { font-size: 10px; font-weight: 800; letter-spacing: 0.06em; min-width: 26px; text-align: center; opacity: 0.85; }
+.band .ibtn:disabled { opacity: 0.3; pointer-events: none; }
+.band .ibtn.on { background: rgba(0, 0, 0, 0.22); color: inherit; opacity: 1; }
+.band.colored .ibtn.on { color: inherit; }
+@media (max-width: 700px) { .band .reorder-btn, .band .right .pageno { display: none; } }
 
 </style>
 </head>
@@ -791,10 +801,29 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 
   /** Legt beim allerersten Start ein Projekt mit fünf Listen an. */
   function ensureDefaults(s) {
-    if (s.projects.length) return;
-    const p = { id: uid(), name: 'Meine Listen', code: 'ML', color: '#8f8f8f' };
-    s.projects.push(p);
-    DEFAULT_LISTS.forEach((name, i) => s.lists.push({ id: uid(), projectId: p.id, name, order: i + 1 }));
+    if (!s.projects.length) {
+      const p = { id: uid(), name: 'Meine Listen', code: 'ML', color: '#8f8f8f' };
+      s.projects.push(p);
+      DEFAULT_LISTS.forEach((name, i) => s.lists.push({ id: uid(), projectId: p.id, name, order: i + 1 }));
+    }
+    renumberProjects(s);
+  }
+  /** Reihenfolge der Projekt-Reiter: nach `order` (fehlt es, ans Ende), danach lückenlos 1, 2, 3 … */
+  function renumberProjects(s) {
+    const idx = new Map(s.projects.map((p, i) => [p.id, i]));
+    s.projects.sort((a, b) => (Number.isFinite(a.order) ? a.order : Infinity) - (Number.isFinite(b.order) ? b.order : Infinity) || idx.get(a.id) - idx.get(b.id));
+    s.projects.forEach((p, i) => { p.order = i + 1; });
+  }
+  /** Verschiebt ein Projekt an die Stelle `index` (0 = ganz links), gezählt ohne das verschobene Projekt. */
+  function reorderProjects(s, id, index) {
+    renumberProjects(s);
+    const p = s.projects.find((x) => x.id === id);
+    if (!p) return false;
+    const others = s.projects.filter((x) => x.id !== id);
+    others.splice(Math.max(0, Math.min(index, others.length)), 0, p);
+    s.projects = others;
+    s.projects.forEach((x, i) => { x.order = i + 1; });
+    return true;
   }
 
   /** Macht aus beliebigem geladenem JSON einen gültigen Zustand (inkl. Umzug von Version 1). */
@@ -814,6 +843,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
         if (p && typeof p.id === 'string' && typeof p.name === 'string') {
           const proj = { id: p.id, name: p.name, code: cleanCode(p.code) || deriveCode(p.name), color: typeof p.color === 'string' ? p.color : '#8a8a8a' };
           if (Number.isFinite(p.updatedAt)) proj.updatedAt = p.updatedAt;
+          if (Number.isFinite(p.order)) proj.order = p.order;
           s.projects.push(proj);
         }
       }
@@ -1396,7 +1426,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     todosOnDate, todosInList, listsOf, plannedForProject, nextOrder, nextOrderInList,
     rollover, orderForIndex, moveTodo, moveToList, reorderLists,
     occursOn, materialize, virtualOn, search,
-    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople,
+    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople, reorderProjects, renumberProjects,
   };
 });
 
@@ -1912,6 +1942,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     'dbl-l': '<path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>',
     'dbl-r': '<path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>',
     calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    reorder: '<path d="M7 7l-4 5 4 5M17 7l4 5-4 5M3 12h18"/>',
     layout: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
     'chev-d': '<path d="M6 9l6 6 6-6"/>',
     'chev-u': '<path d="M18 15l-6-6-6 6"/>',
@@ -2511,22 +2542,26 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     const { pages } = pageInfo();
     const proj = curProject();
     if (ui.mproj !== proj.id) { ui.mproj = proj.id; ui.mcol = 0; }
-    const dots = isMobile()
-      ? h('div', { class: 'dots' }, Array.from({ length: mobileColCount() }, (_, i) =>
-        h('button', { type: 'button', class: 'dotbtn' + (i === (ui.mcol || 0) ? ' on' : ''), 'aria-label': 'Spalte ' + (i + 1), onclick: () => {
-          const el = document.querySelector('.lists');
-          if (el) el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' });
-        } })))
-      : h('div', { class: 'dots' }, Array.from({ length: pages }, (_, i) =>
-        h('button', { type: 'button', class: 'dotbtn' + (i === ui.page ? ' on' : ''), 'aria-label': 'Seite ' + (i + 1), onclick: () => { ui.page = i; render(); } })));
+    const dots = !isMobile() ? null : h('div', { class: 'dots' }, Array.from({ length: mobileColCount() }, (_, i) =>
+      h('button', { type: 'button', class: 'dotbtn' + (i === (ui.mcol || 0) ? ' on' : ''), 'aria-label': 'Spalte ' + (i + 1), onclick: () => {
+        const el = document.querySelector('.lists');
+        if (el) el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' });
+      } })));
+    // Am Desktop: Seitenwechsel über Pfeile rechts in der Leiste (nur, wenn es mehr als eine Seite gibt)
+    const pager = isMobile() || pages < 2 ? [] : [
+      h('button', { type: 'button', class: 'ibtn', title: 'Vorherige Spalten', 'aria-label': 'Vorherige Spalten', disabled: ui.page === 0 ? true : null, onclick: () => { ui.page = Math.max(0, ui.page - 1); render(); } }, icon('chev-l')),
+      h('span', { class: 'pageno', 'aria-live': 'polite' }, (ui.page + 1) + '/' + pages),
+      h('button', { type: 'button', class: 'ibtn', title: 'Weitere Spalten', 'aria-label': 'Weitere Spalten', disabled: ui.page >= pages - 1 ? true : null, onclick: () => { ui.page = Math.min(pages - 1, ui.page + 1); render(); } }, icon('chev-r')),
+    ];
     const el = h('div', { class: 'band colored' },
       h('div', { class: 'left' }, ui.mode === 'max' ? null : ibtn(ui.mode === 'closed' ? 'chev-u' : 'chev-d', ui.mode === 'closed' ? 'Listen einblenden' : 'Listen ausblenden', () => {
         ui.mode = ui.mode === 'closed' ? 'open' : 'closed';
         render();
       }), h('span', { class: 'band-name' }, proj.name)),
       dots,
-      h('button', { type: 'button', class: 'pill' + (ui.reorder ? ' on' : ''), onclick: () => { ui.reorder = !ui.reorder; render(); } }, ui.reorder ? 'Fertig' : 'Reihenfolge ändern'),
-      h('div', { class: 'right' }, ibtn('plus', 'Neue Liste', addList)));
+      h('div', { class: 'right' }, ...pager,
+        h('button', { type: 'button', class: 'ibtn reorder-btn' + (ui.reorder ? ' on' : ''), title: ui.reorder ? 'Reihenfolge ändern beenden' : 'Reihenfolge der Listen ändern', 'aria-label': 'Reihenfolge der Listen ändern', 'aria-pressed': String(!!ui.reorder), onclick: () => { ui.reorder = !ui.reorder; render(); } }, icon('reorder')),
+        ibtn('plus', 'Neue Liste', addList)));
     el.style.setProperty('--band-bg', proj.color);
     el.style.setProperty('--band-fg', textOn(proj.color));
     return el;
@@ -2745,11 +2780,39 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
           { label: 'Umbenennen / Farbe …', run: () => openProjectDialog(p.id) },
           { label: 'Projekt löschen', danger: true, run: () => deleteProject(p.id) },
         ]) }, moreIcon()) : null);
-      el.addEventListener('dragover', (e) => { if (drag && drag.kind === 'todo') { e.preventDefault(); el.classList.add('drop-target'); } });
-      el.addEventListener('dragleave', () => el.classList.remove('drop-target'));
+      // Reiter per Ziehen umsortieren
+      el.setAttribute('draggable', 'true');
+      el.addEventListener('dragstart', (e) => {
+        drag = { kind: 'tab', id: p.id };
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', p.id);
+      });
+      el.addEventListener('dragend', () => { drag = null; clearMarks(); });
+      el.addEventListener('dragover', (e) => {
+        if (drag && drag.kind === 'tab' && drag.id !== p.id) {
+          e.preventDefault();
+          clearMarks();
+          const r = el.getBoundingClientRect();
+          el.classList.add(e.clientX > r.left + r.width / 2 ? 'insert-right' : 'insert-left');
+        } else if (drag && drag.kind === 'todo') { e.preventDefault(); el.classList.add('drop-target'); }
+      });
+      el.addEventListener('dragleave', () => el.classList.remove('drop-target', 'insert-left', 'insert-right'));
       el.addEventListener('drop', (e) => {
         e.preventDefault();
         el.classList.remove('drop-target');
+        if (drag && drag.kind === 'tab') {
+          if (drag.id !== p.id) {
+            const r = el.getBoundingClientRect();
+            const right = e.clientX > r.left + r.width / 2;
+            const others = state.projects.filter((x) => x.id !== drag.id);
+            L.reorderProjects(state, drag.id, others.findIndex((x) => x.id === p.id) + (right ? 1 : 0));
+            saveSoon();
+          }
+          drag = null;
+          clearMarks();
+          render();
+          return;
+        }
         if (!drag || drag.kind !== 'todo') return;
         const first = L.listsOf(state, p.id).find((l) => !l.deadline);
         if (!first) { toast('Dieses Projekt hat noch keine Liste.'); return; }
@@ -2764,7 +2827,20 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     const doneTab = h('div', { class: 'ptab donetab', 'aria-current': ui.showDone ? 'page' : null },
       h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.showDone = true; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
         'Erledigt ', h('span', { class: 'count' }, state.todos.filter((t) => t.done).length)));
-    tabs.push(h('div', { class: 'ptab' }, h('button', { type: 'button', class: 'tabmain', title: 'Neues Projekt', 'aria-label': 'Neues Projekt', onclick: () => openProjectDialog(null) }, '+')));
+    const plus = h('div', { class: 'ptab' }, h('button', { type: 'button', class: 'tabmain', title: 'Neues Projekt', 'aria-label': 'Neues Projekt', onclick: () => openProjectDialog(null) }, '+'));
+    // Auf „+“ ablegen = ans Ende verschieben
+    plus.addEventListener('dragover', (e) => { if (drag && drag.kind === 'tab') { e.preventDefault(); clearMarks(); plus.classList.add('insert-left'); } });
+    plus.addEventListener('dragleave', () => plus.classList.remove('insert-left'));
+    plus.addEventListener('drop', (e) => {
+      if (!drag || drag.kind !== 'tab') return;
+      e.preventDefault();
+      L.reorderProjects(state, drag.id, state.projects.length);
+      drag = null;
+      clearMarks();
+      saveSoon();
+      render();
+    });
+    tabs.push(plus);
     return h('footer', { class: 'tabs' }, h('div', { class: 'ptabs' }, tabs), h('div', { class: 'tail' }, doneTab, ibtn('help', 'Bedienung', () => $('#help-dialog').showModal())));
   }
   function moreIcon() {
@@ -3175,7 +3251,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     $('#edit-list-wrap').hidden = ruleOnly;
     const sel = $('#edit-list');
     sel.replaceChildren(h('option', { value: '' }, '– keine Liste –'),
-      ...state.projects.map((p) => h('optgroup', { label: p.name }, L.listsOf(state, p.id).map((l) => h('option', { value: l.id }, l.name)))));
+      ...state.projects.flatMap((p) => L.listsOf(state, p.id).map((l) => h('option', { value: l.id }, p.name + ' › ' + l.name))));
     sel.value = listId || '';
     $('#edit-freq').value = rule ? rule.freq : '';
     $('#edit-interval').value = rule ? rule.interval : 1;
@@ -3295,7 +3371,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       p.code = code;
       p.color = pickedColor;
     } else {
-      const p = { id: L.uid(), name, code, color: pickedColor };
+      const p = { id: L.uid(), name, code, color: pickedColor, order: state.projects.length + 1 };
       state.projects.push(p);
       state.lists.push({ id: L.uid(), projectId: p.id, name: 'Aufgaben', order: 1 });
       L.ensureDeadlineLists(state);
@@ -3422,6 +3498,20 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   window.addEventListener('focus', () => checkNewDay(true));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkNewDay(true); });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (state.settings.mode === 'auto') render(); });
+
+  // Klick auf den abgedunkelten Hintergrund neben einem Fenster schließt es (wie Esc; ungespeicherte Mitschriften fragen vorher nach)
+  document.querySelectorAll('dialog').forEach((dlg) => {
+    let downOnBackdrop = false;
+    const outside = (e) => { const r = dlg.getBoundingClientRect(); return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom; };
+    dlg.addEventListener('mousedown', (e) => { downOnBackdrop = e.target === dlg && outside(e); });
+    dlg.addEventListener('click', (e) => {
+      if (!downOnBackdrop || e.target !== dlg || !outside(e)) return;
+      downOnBackdrop = false;
+      const ev = new Event('cancel', { cancelable: true });
+      dlg.dispatchEvent(ev);
+      if (!ev.defaultPrevented) dlg.close();
+    });
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeMenu();
