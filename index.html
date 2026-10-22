@@ -524,6 +524,36 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 .day .todo.internal .todo-text, .mchip.internal .mtext { color: var(--muted, #8a8a8a); }
 .day .todo:not(.internal) + .todo.internal { margin-top: 6px; border-top: 1px solid var(--line, rgba(128,128,128,.25)); padding-top: 6px; }
 
+/* ---------- Seitenfenster: von rechts hereingeschoben ---------- */
+dialog.drawer, dialog.drawer.detail, dialog.drawer.minute {
+  position: fixed; inset: 0 0 0 auto; margin: 0; height: 100vh; max-height: none;
+  width: clamp(420px, 40vw, 760px); max-width: 100vw; border-radius: 0; border-width: 0 0 0 1px;
+  box-shadow: -10px 0 28px rgba(0, 0, 0, 0.16); overflow: auto; z-index: 40;
+}
+dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
+@keyframes drawer-in { from { transform: translateX(100%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { dialog.drawer.slide-in { animation: none; } }
+@media (max-width: 700px) { dialog.drawer, dialog.drawer.detail, dialog.drawer.minute { width: 100vw; } }
+
+/* Projekt-Aktionen in der Leiste */
+.band .ibtn.pa-max.on { background: rgba(0, 0, 0, 0.22); }
+@media (max-width: 700px) { .band .pa-max { display: none; } }
+.acard .aact .danger { color: var(--accent); }
+
+/* Datumsauswahl */
+.calpop { position: fixed; z-index: 35; width: 252px; background: var(--menu-bg); color: var(--text); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); padding: 10px; }
+.calhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.calhead .ibtn { color: var(--text); width: 26px; height: 26px; }
+.caltitle { font-weight: 600; font-size: 13px; text-transform: capitalize; }
+.calgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.calwd span { text-align: center; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; padding: 3px 0; }
+.cday { height: 30px; border-radius: 6px; font-size: 13px; color: var(--text); }
+.cday:hover { background: var(--band); }
+.cday.other { color: var(--faint); }
+.cday.today { font-weight: 800; color: var(--accent); }
+.cday.sel { background: var(--accent); color: #fff; }
+.calnow { display: block; margin: 8px auto 0; font-size: 12px; color: var(--accent); }
+
 </style>
 </head>
 <body>
@@ -532,7 +562,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   <input id="date-jump" type="date" class="visually-hidden" tabindex="-1" aria-hidden="true">
   <input id="import-file" type="file" accept="application/json,.json" hidden>
 
-  <dialog id="edit-dialog" class="detail">
+  <dialog id="edit-dialog" class="detail drawer">
     <form method="dialog" id="edit-form">
       <h2 id="edit-title">Aufgabe</h2>
       <label>Text<input id="edit-text" type="text" required maxlength="500" autocomplete="off"></label>
@@ -572,7 +602,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     </form>
   </dialog>
 
-  <dialog id="project-dialog">
+  <dialog id="project-dialog" class="drawer">
     <form method="dialog" id="project-form">
       <h2 id="project-dialog-title">Neues Projekt</h2>
       <label>Name<input id="project-name" type="text" required maxlength="40" autocomplete="off"></label>
@@ -590,7 +620,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     </form>
   </dialog>
 
-  <dialog id="min-dialog" class="minute">
+  <dialog id="min-dialog" class="minute drawer">
     <form method="dialog" id="min-form">
       <h2 id="min-heading">Neue Mitschrift</h2>
       <label>Titel<input id="min-title" type="text" maxlength="200" autocomplete="off" placeholder="z. B. Jour fixe Bauablauf"></label>
@@ -654,7 +684,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     </form>
   </dialog>
 
-  <dialog id="prefs-dialog">
+  <dialog id="prefs-dialog" class="drawer">
     <form method="dialog" id="prefs-form">
       <h2>Einstellungen</h2>
       <fieldset>
@@ -704,7 +734,8 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
         <li>Erledigte Aufgaben liegen unter <b>Erledigt</b> (Tab rechts unten), die zuletzt abgehakten oben</li>
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
-        <li><b>Archiv</b>: Projekte über das Menü „⋮“ archivieren; sie verschwinden aus Kalender und Suche, bleiben im Reiter <b>Archiv</b> durchsuchbar und lassen sich wiederherstellen. Die Spalte <b>Sachstand</b> hält den aktuellen Stand je Projekt in wenigen Worten fest</li>
+        <li><b>Projekt-Aktionen</b> (Seite öffnen, Umbenennen / Farbe, Archivieren, Löschen) liegen als Symbole rechts in der farbigen Leiste. Gelöschte Projekte liegen im <b>Papierkorb</b> und lassen sich zurückholen. Fenster wie Aufgabe oder Mitschrift schieben von rechts herein; links bleibt alles bedienbar</li>
+        <li><b>Archiv</b>: Projekte über das Symbol in der Leiste archivieren; sie verschwinden aus Kalender und Suche, bleiben im Reiter <b>Archiv</b> durchsuchbar und lassen sich wiederherstellen. Die Spalte <b>Sachstand</b> hält den aktuellen Stand je Projekt in wenigen Worten fest</li>
         <li><b>Interne Projekte</b> (Haken im Projektdialog): ihre Aufgaben stehen am Tag unter den übrigen, abgesetzt und dezenter; Priorität und Fristen bleiben oben. Neue Listen sind weiterhin möglich</li>
         <li>Auf dem Handy unten <b>wischen</b>, um zwischen Geplant, Fristen, Mitschriften und Listen zu wechseln</li>
         <li>Unten zeigt ein Projekt-Tab seine Listen und alle datierten Aufgaben unter „Geplant“</li>
@@ -875,7 +906,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       DEFAULT_LISTS.forEach((name, i) => s.lists.push({ id: uid(), projectId: p.id, name, order: i + 1 }));
     }
     renumberProjects(s);
-    if (s.projects.every((p) => p.archived)) { delete s.projects[0].archived; delete s.projects[0].archivedAt; } // mindestens ein aktives Projekt
+    if (s.projects.every((p) => p.archived || p.trashed)) { for (const k of ['archived', 'archivedAt', 'trashed', 'trashedAt']) delete s.projects[0][k]; } // mindestens ein aktives Projekt
   }
   /** Reihenfolge der Projekt-Reiter: nach `order` (fehlt es, ans Ende), danach lückenlos 1, 2, 3 … */
   function renumberProjects(s) {
@@ -914,6 +945,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
           if (Number.isFinite(p.updatedAt)) proj.updatedAt = p.updatedAt;
           if (Number.isFinite(p.order)) proj.order = p.order;
           if (p.internal) proj.internal = true;
+          if (p.trashed) { proj.trashed = true; if (typeof p.trashedAt === 'string') proj.trashedAt = p.trashedAt; }
           if (p.archived) { proj.archived = true; if (typeof p.archivedAt === 'string') proj.archivedAt = p.archivedAt; }
           if (typeof p.status === 'string' && p.status.trim()) proj.status = p.status.trim().slice(0, 600);
           if (['ok', 'warn', 'bad'].includes(p.statusLevel)) proj.statusLevel = p.statusLevel;
@@ -1203,7 +1235,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   const byOrder = (a, b) => a.order - b.order;
 
   /** IDs archivierter Projekte – ihre Aufgaben erscheinen weder im Kalender noch in Suche und „Erledigt“. */
-  function archivedIds(state) { return new Set(state.projects.filter((p) => p.archived).map((p) => p.id)); }
+  function archivedIds(state) { return new Set(state.projects.filter((p) => p.archived || p.trashed).map((p) => p.id)); }
   function todosOnDate(state, iso) {
     const arch = archivedIds(state);
     const intern = internalIds(state);
@@ -1415,7 +1447,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   /** Suche im Archiv: archivierte Projekte (Name, Kürzel, Sachstand), ihre Aufgaben (auch erledigte) und Mitschriften. */
   function searchArchive(state, query) {
     const q = String(query || '').trim().toLowerCase();
-    const arch = state.projects.filter((p) => p.archived);
+    const arch = state.projects.filter((p) => p.archived && !p.trashed);
     const ids = new Set(arch.map((p) => p.id));
     const has = (v) => String(v || '').toLowerCase().includes(q);
     if (!q) return { projects: arch, todos: [], minutes: [] };
@@ -2061,7 +2093,11 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     'chev-d': '<path d="M6 9l6 6 6-6"/>',
     'chev-u': '<path d="M18 15l-6-6-6 6"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    expand: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
+    archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/>',
+    trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/>',
     pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+    _x: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
     home: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
     note: '<path d="M4 6h16M4 12h16M4 18h10"/>',
@@ -2103,9 +2139,9 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 
   const projectById = (id) => state.projects.find((p) => p.id === id);
   const listById = (id) => state.lists.find((l) => l.id === id);
-  const activeProjects = () => state.projects.filter((p) => !p.archived);
+  const activeProjects = () => state.projects.filter((p) => !p.archived && !p.trashed);
   const firstActive = () => activeProjects()[0] || state.projects[0];
-  const curProject = () => { const p = projectById(ui.projectId); return p && !p.archived ? p : firstActive(); };
+  const curProject = () => { const p = projectById(ui.projectId); return p && !p.archived && !p.trashed ? p : firstActive(); };
   // „Geplant“ steht links, sobald das Projekt datierte Aufgaben hat (ab dem zweiten Projekt und auf der Projektseite immer).
   const showPlanned = () => ui.mode === 'max' || activeProjects().indexOf(curProject()) > 0 || L.plannedForProject(state, curProject().id).length > 0;
   const mobileMq = window.matchMedia ? window.matchMedia('(max-width: 700px)') : { matches: false };
@@ -2187,6 +2223,32 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     if (ask && !L.isHeading(todo.text)) setTimeout(() => askDate(todo.id, !!(list && list.deadline)), 0);
     return true;
   }
+
+  // ---------- Seitenfenster (von rechts hereingeschoben, Kalender bleibt links bedienbar) ----------
+  /** Speichert bzw. schließt offene Seitenfenster, bevor ein neues Fenster gefüllt wird. */
+  function prepareDrawer() {
+    document.querySelectorAll('dialog.drawer[open]').forEach((o) => {
+      const form = o.querySelector('form');
+      const save = o.id === 'edit-dialog' || (o.id === 'min-dialog' && minDirty);
+      if (save && form.checkValidity()) form.requestSubmit();
+      if (o.open) o.close();
+    });
+  }
+  function openDrawer(dlg) {
+    dlg.classList.remove('slide-in');
+    dlg.show();
+    void dlg.offsetWidth;
+    dlg.classList.add('slide-in');
+  }
+  document.querySelectorAll('dialog.drawer').forEach((dlg) => {
+    dlg.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      e.preventDefault();
+      const ev = new Event('cancel', { cancelable: true });
+      dlg.dispatchEvent(ev);
+      if (!ev.defaultPrevented) dlg.close();
+    });
+  });
 
   // ---------- Dialog: Datum abfragen ----------
   const dateDlg = $('#date-dialog');
@@ -2651,13 +2713,13 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   }
 
   function band() {
-    if (ui.showDone || ui.showArchive) {
+    if (ui.showDone || ui.showArchive || ui.showTrash) {
       return h('div', { class: 'band' },
         h('div', { class: 'left' }, ui.mode === 'max' ? null : ibtn(ui.mode === 'closed' ? 'chev-u' : 'chev-d', ui.mode === 'closed' ? 'Listen einblenden' : 'Listen ausblenden', () => {
           ui.mode = ui.mode === 'closed' ? 'open' : 'closed';
           render();
         })),
-        h('span', { class: 'band-title' }, ui.showArchive ? 'Archiv' : 'Erledigt'));
+        h('span', { class: 'band-title' }, ui.showTrash ? 'Papierkorb' : ui.showArchive ? 'Archiv' : 'Erledigt'));
     }
     const { pages } = pageInfo();
     const proj = curProject();
@@ -2680,6 +2742,10 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       }), h('span', { class: 'band-name' }, proj.name)),
       dots,
       h('div', { class: 'right' }, ...pager,
+        ibtn('expand', ui.mode === 'max' ? 'Projektseite schließen' : 'Projektseite öffnen', () => { ui.mode = ui.mode === 'max' ? 'open' : 'max'; ui.page = 0; render(); }, 'pa-max' + (ui.mode === 'max' ? ' on' : '')),
+        ibtn('pencil', 'Projekt umbenennen / Farbe …', () => openProjectDialog(proj.id), 'pa'),
+        ibtn('archive', 'Projekt archivieren', () => archiveProject(proj.id), 'pa'),
+        ibtn('trash', 'Projekt löschen (Papierkorb)', () => deleteProject(proj.id), 'pa'),
         h('button', { type: 'button', class: 'ibtn reorder-btn' + (ui.reorder ? ' on' : ''), title: ui.reorder ? 'Reihenfolge ändern beenden' : 'Reihenfolge der Listen ändern', 'aria-label': 'Reihenfolge der Listen ändern', 'aria-pressed': String(!!ui.reorder), onclick: () => { ui.reorder = !ui.reorder; render(); } }, icon('reorder')),
         ibtn('plus', 'Neue Liste', addList)));
     el.style.setProperty('--band-bg', proj.color);
@@ -2713,6 +2779,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   }
 
   function listsArea() {
+    if (ui.showTrash) return trashArea();
     if (ui.showArchive) return archiveArea();
     if (ui.showDone) return doneArea();
     const p = curProject();
@@ -2802,8 +2869,11 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     if (!p) return;
     delete p.archived;
     delete p.archivedAt;
+    delete p.trashed;
+    delete p.trashedAt;
     ui.projectId = p.id;
     ui.showArchive = false;
+    ui.showTrash = false;
     ui.showDone = false;
     ui.archiveProject = null;
     ui.page = 0;
@@ -2815,7 +2885,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   function archiveArea() {
     const root = h('section', { class: 'lists archive-view', 'aria-label': 'Archiv' });
     const open = ui.archiveProject && projectById(ui.archiveProject);
-    if (open && open.archived) { root.append(archiveDetail(open)); return root; }
+    if (open && open.archived && !open.trashed) { root.append(archiveDetail(open)); return root; }
     ui.archiveProject = null;
     const results = h('div', { class: 'arch-results' });
     const inp = h('input', { type: 'search', class: 'arch-search', placeholder: 'Archiv durchsuchen: Projekte, Aufgaben, Mitschriften …', 'aria-label': 'Archiv durchsuchen', 'data-focus': 'archsearch', autocomplete: 'off' });
@@ -2856,8 +2926,8 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     const r = L.searchArchive(state, query);
     const out = document.createDocumentFragment();
     const sec = (title, kids) => { if (kids.length) out.append(h('h3', { class: 'asec' }, title), h('div', { class: 'agrid' }, kids)); };
-    if (!state.projects.some((p) => p.archived)) {
-      out.append(h('p', { class: 'arch-empty' }, 'Das Archiv ist leer. Projekte archivieren Sie über das Menü „⋮“ am Projekt-Reiter; sie verschwinden dann aus Kalender, Reitern und Suche, bleiben hier aber durchsuchbar.'));
+    if (!state.projects.some((p) => p.archived && !p.trashed)) {
+      out.append(h('p', { class: 'arch-empty' }, 'Das Archiv ist leer. Projekte archivieren Sie über das Archiv-Symbol rechts in der farbigen Leiste; sie verschwinden dann aus Kalender, Reitern und Suche, bleiben hier aber durchsuchbar.'));
       return out;
     }
     sec('Projekte', r.projects.map(projectCard));
@@ -3036,17 +3106,10 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   // ---------- Projekt-Tabs ----------
   function tabsBar() {
     const tabs = activeProjects().map((p) => {
-      const active = !ui.showDone && !ui.showArchive && p.id === curProject().id;
+      const active = !ui.showDone && !ui.showArchive && !ui.showTrash && p.id === curProject().id;
       const count = L.openCountForProject(state, p.id);
       const el = h('div', { class: 'ptab', 'aria-current': active ? 'page' : null },
-        h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.projectId = p.id; ui.showDone = false; ui.showArchive = false; ui.page = 0; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, p.name, ' ', h('span', { class: 'count' }, count)),
-        active ? h('button', { type: 'button', class: 'more', title: 'Projekt-Menü', 'aria-label': 'Projekt-Menü', onclick: (e) => showMenu(e.currentTarget, [
-          { label: ui.mode === 'max' ? 'Projektseite schließen' : 'Projektseite öffnen', run: () => { ui.mode = ui.mode === 'max' ? 'open' : 'max'; ui.page = 0; render(); } },
-          { label: 'Neue Liste', run: addList },
-          { label: 'Umbenennen / Farbe …', run: () => openProjectDialog(p.id) },
-          { label: 'Projekt archivieren', run: () => archiveProject(p.id) },
-          { label: 'Projekt löschen', danger: true, run: () => deleteProject(p.id) },
-        ]) }, moreIcon()) : null);
+        h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.projectId = p.id; ui.showDone = false; ui.showArchive = false; ui.showTrash = false; ui.page = 0; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, p.name, ' ', h('span', { class: 'count' }, count)));
       // Reiter per Ziehen umsortieren
       el.setAttribute('draggable', 'true');
       el.addEventListener('dragstart', (e) => {
@@ -3092,7 +3155,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       return el;
     });
     const doneTab = h('div', { class: 'ptab donetab', 'aria-current': ui.showDone ? 'page' : null },
-      h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.showDone = true; ui.showArchive = false; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
+      h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.showDone = true; ui.showArchive = false; ui.showTrash = false; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
         'Erledigt ', h('span', { class: 'count' }, state.todos.filter((t) => t.done).length)));
     const plus = h('div', { class: 'ptab' }, h('button', { type: 'button', class: 'tabmain', title: 'Neues Projekt', 'aria-label': 'Neues Projekt', onclick: () => openProjectDialog(null) }, '+'));
     // Auf „+“ ablegen = ans Ende verschieben
@@ -3109,9 +3172,12 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     });
     tabs.push(plus);
     const archTab = h('div', { class: 'ptab archtab', 'aria-current': ui.showArchive ? 'page' : null },
-      h('button', { type: 'button', class: 'tabmain', title: 'Archivierte Projekte durchsuchen', onclick: () => { ui.showArchive = true; ui.showDone = false; ui.reorder = false; ui.archiveProject = null; ui.focus = 'archsearch'; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
-        'Archiv ', h('span', { class: 'count' }, state.projects.filter((p) => p.archived).length)));
-    return h('footer', { class: 'tabs' }, h('div', { class: 'ptabs' }, tabs), h('div', { class: 'tail' }, archTab, doneTab, ibtn('help', 'Bedienung', () => $('#help-dialog').showModal())));
+      h('button', { type: 'button', class: 'tabmain', title: 'Archivierte Projekte durchsuchen', onclick: () => { ui.showArchive = true; ui.showDone = false; ui.showTrash = false; ui.reorder = false; ui.archiveProject = null; ui.focus = 'archsearch'; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
+        'Archiv ', h('span', { class: 'count' }, state.projects.filter((p) => p.archived && !p.trashed).length)));
+    const trashTab = h('div', { class: 'ptab archtab trashtab', 'aria-current': ui.showTrash ? 'page' : null },
+      h('button', { type: 'button', class: 'tabmain', title: 'Gelöschte Projekte wiederherstellen', onclick: () => { ui.showTrash = true; ui.showArchive = false; ui.showDone = false; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
+        'Papierkorb ', h('span', { class: 'count' }, state.projects.filter((p) => p.trashed).length)));
+    return h('footer', { class: 'tabs' }, h('div', { class: 'ptabs' }, tabs), h('div', { class: 'tail' }, archTab, trashTab, doneTab, ibtn('help', 'Bedienung', () => $('#help-dialog').showModal())));
   }
   function moreIcon() {
     const svg = document.createElementNS(NS, 'svg');
@@ -3123,12 +3189,24 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 
   function deleteProject(id) {
     const p = projectById(id);
-    if (!p) return;
+    if (!p || p.trashed) return;
     if (!p.archived && activeProjects().length <= 1) { toast('Das letzte aktive Projekt kann nicht gelöscht werden.'); return; }
-    const n = state.todos.filter((t) => t.projectId === id && !t.date).length;
+    withUndo('Projekt „' + p.name + '“ in den Papierkorb verschoben.', () => {
+      p.trashed = true;
+      p.trashedAt = today;
+      ui.projectId = firstActive().id;
+      ui.page = 0;
+      ui.reorder = false;
+    });
+  }
+  /** Löscht ein Projekt samt Listen, Listenaufgaben und Mitschriften endgültig. */
+  function purgeProject(id) {
+    const p = projectById(id);
+    if (!p) return;
+    const n = state.todos.filter((t) => t.projectId === id).length;
     const nm = state.minutes.filter((m) => m.projectId === id).length;
-    if ((n || nm) && !window.confirm('Projekt „' + p.name + '“ mit ' + n + ' Aufgabe(n) in Listen und ' + nm + ' Mitschrift(en) löschen?')) return;
-    withUndo('Projekt gelöscht.', () => {
+    if (!window.confirm('Projekt „' + p.name + '“ mit ' + n + ' Aufgabe(n) und ' + nm + ' Mitschrift(en) endgültig löschen? Das lässt sich nicht rückgängig machen.')) return;
+    withUndo('Projekt endgültig gelöscht.', () => {
       const listIds = new Set(state.lists.filter((l) => l.projectId === id).map((l) => l.id));
       state.todos = state.todos.filter((t) => !(listIds.has(t.listId) && !t.date));
       for (const t of state.todos) { if (listIds.has(t.listId)) t.listId = null; if (t.projectId === id) t.projectId = null; }
@@ -3136,9 +3214,25 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       state.lists = state.lists.filter((l) => !listIds.has(l.id));
       state.minutes = state.minutes.filter((m) => m.projectId !== id);
       state.projects = state.projects.filter((x) => x.id !== id);
-      ui.projectId = firstActive().id;
-      ui.page = 0;
     });
+  }
+  function trashArea() {
+    const root = h('section', { class: 'lists archive-view', 'aria-label': 'Papierkorb' });
+    const gone = state.projects.filter((p) => p.trashed);
+    if (!gone.length) { root.append(h('div', { class: 'arch-wrap' }, h('p', { class: 'arch-empty' }, 'Der Papierkorb ist leer. Gelöschte Projekte landen hier und lassen sich mit allen Listen, Aufgaben und Mitschriften zurückholen.'))); return root; }
+    root.append(h('div', { class: 'arch-wrap' }, h('div', { class: 'agrid' }, gone.map((p) => {
+      const st = projectStats(p);
+      const bar = h('span', { class: 'abar' });
+      bar.style.setProperty('--c', p.color);
+      return h('div', { class: 'acard' }, bar,
+        h('div', { class: 'abody' },
+          h('div', { class: 'atitle' }, p.name, ' ', badge(p)),
+          h('div', { class: 'ameta' }, (p.trashedAt ? 'gelöscht am ' + fmtFull.format(L.parseISO(p.trashedAt)) + ' · ' : '') + st.todos + ' Aufgaben · ' + st.minutes + ' Mitschriften')),
+        h('div', { class: 'aact' },
+          h('button', { type: 'button', onclick: () => restoreProject(p.id) }, 'Wiederherstellen'),
+          h('button', { type: 'button', class: 'danger', onclick: () => purgeProject(p.id) }, 'Endgültig löschen')));
+    }))));
+    return root;
   }
 
   // ---------- Dialog: Mitschrift ----------
@@ -3217,6 +3311,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   $('#min-people-add').addEventListener('click', () => addPerson(true));
 
   function openMinute(id) {
+    prepareDrawer();
     const m = id ? state.minutes.find((x) => x.id === id) : null;
     if (id && !m) return;
     minCtx = { id: id || null, projectId: m ? m.projectId : curProject().id };
@@ -3231,7 +3326,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     $('#min-delete').hidden = !m;
     minDirty = false;
     minSetPreview(!!m && !!m.body);
-    minDlg.showModal();
+    openDrawer(minDlg);
     if (!m) $('#min-title').focus();
   }
   minDlg.addEventListener('input', () => { minDirty = true; });
@@ -3521,21 +3616,23 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     $('#edit-list-wrap').hidden = ruleOnly;
     const sel = $('#edit-list');
     sel.replaceChildren(h('option', { value: '' }, '– keine Liste –'),
-      ...state.projects.filter((p) => !p.archived || (listId && listById(listId) && listById(listId).projectId === p.id)).flatMap((p) => L.listsOf(state, p.id).map((l) => h('option', { value: l.id }, p.name + ' › ' + l.name))));
+      ...state.projects.filter((p) => (!p.archived && !p.trashed) || (listId && listById(listId) && listById(listId).projectId === p.id)).flatMap((p) => L.listsOf(state, p.id).map((l) => h('option', { value: l.id }, p.name + ' › ' + l.name))));
     sel.value = listId || '';
     $('#edit-freq').value = rule ? rule.freq : '';
     $('#edit-interval').value = rule ? rule.interval : 1;
     syncInterval();
-    editDlg.showModal();
+    openDrawer(editDlg);
     $('#edit-text').select();
   }
   function openEdit(id) {
+    prepareDrawer();
     const t = state.todos.find((x) => x.id === id);
     if (!t) return;
     editCtx = { kind: 'todo', id };
     fillEdit(t.text, t.date, t.listId, t.recurId ? state.recurs.find((r) => r.id === t.recurId) : null, false);
   }
   function openRule(id) {
+    prepareDrawer();
     const r = state.recurs.find((x) => x.id === id);
     if (!r) return;
     editCtx = { kind: 'rule', id };
@@ -3606,6 +3703,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   }
   function drawProjectSwatches() { swatches($('#project-colors'), PROJECT_COLORS, pickedColor, (c) => { pickedColor = c; drawProjectSwatches(); }); }
   function openProjectDialog(id) {
+    prepareDrawer();
     projectEditId = id || null;
     const p = id ? projectById(id) : null;
     $('#project-dialog-title').textContent = p ? 'Projekt bearbeiten' : 'Neues Projekt';
@@ -3616,7 +3714,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     $('#project-name').setCustomValidity('');
     pickedColor = p ? p.color : PROJECT_COLORS[state.projects.length % PROJECT_COLORS.length];
     drawProjectSwatches();
-    projDlg.showModal();
+    openDrawer(projDlg);
     $('#project-name').focus();
   }
   let codeTouched = false;
@@ -3659,9 +3757,10 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 
   // ---------- Dialog: Einstellungen ----------
   function openPrefs() {
+    prepareDrawer();
     $('#pref-mode').value = state.settings.mode;
     drawAccentSwatches();
-    $('#prefs-dialog').showModal();
+    openDrawer($('#prefs-dialog'));
   }
   function drawAccentSwatches() {
     swatches($('#accent-colors'), ACCENTS.map((a) => a[1]), state.settings.accent, (c) => {
@@ -3702,6 +3801,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     $('#search-dialog').close();
     ui.showDone = !!t.done;
     ui.showArchive = false;
+    ui.showTrash = false;
     if (t.done) { if (ui.mode === 'closed') ui.mode = 'open'; }
     else if (t.date) {
       ui.view = 'week';
@@ -3718,20 +3818,46 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   }
 
   // ---------- Datum wählen, Sichern / Laden ----------
+  let calPop = null;
+  function closeCal() { if (calPop) { calPop.remove(); calPop = null; document.removeEventListener('mousedown', calOutside, true); } }
+  function calOutside(e) { if (calPop && !calPop.contains(e.target)) closeCal(); }
   function openDatePicker(anchor) {
-    const dj = $('#date-jump');
+    closeMenu();
+    if (calPop) { closeCal(); return; }
+    const sel = ui.view === 'month' ? ui.month : L.addDays(today, ui.offset);
+    let cur = L.monthStart(sel);
+    calPop = h('div', { class: 'calpop', role: 'dialog', 'aria-label': 'Zu Datum springen' });
+    document.body.append(calPop);
+    const go = (iso) => {
+      closeCal();
+      if (ui.showDone || ui.showArchive || ui.showTrash) { ui.showDone = false; ui.showArchive = false; ui.showTrash = false; }
+      if (ui.view === 'month') { ui.month = L.monthStart(iso); gotoMonthWeek(iso, 1); return; }
+      showDate(iso);
+      render();
+    };
+    const draw = () => {
+      const start = L.weekStart(cur);
+      const cells = [];
+      for (let i = 0; i < 42; i++) {
+        const iso = L.addDays(start, i);
+        cells.push(h('button', { type: 'button', class: 'cday' + (iso.slice(0, 7) !== cur.slice(0, 7) ? ' other' : '') + (iso === today ? ' today' : '') + (iso === sel ? ' sel' : ''), onclick: () => go(iso) }, String(parseInt(iso.slice(8), 10))));
+      }
+      calPop.replaceChildren(
+        h('div', { class: 'calhead' },
+          ibtn('chev-l', 'Vorheriger Monat', () => { cur = L.addMonths(cur, -1); draw(); }),
+          h('span', { class: 'caltitle' }, fmtMonth.format(L.parseISO(cur))),
+          ibtn('chev-r', 'Nächster Monat', () => { cur = L.addMonths(cur, 1); draw(); })),
+        h('div', { class: 'calgrid calwd' }, ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((x) => h('span', {}, x))),
+        h('div', { class: 'calgrid' }, cells),
+        h('button', { type: 'button', class: 'calnow', onclick: () => go(today) }, 'Heute'));
+    };
+    draw();
     const r = anchor.getBoundingClientRect();
-    dj.style.left = r.left + 'px';
-    dj.style.top = r.bottom + 'px';
-    dj.value = ui.view === 'month' ? ui.month : L.addDays(today, ui.offset);
-    try { dj.showPicker(); } catch (e) { dj.focus(); dj.click(); }
+    const w = 252;
+    calPop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+    calPop.style.top = Math.min(window.innerHeight - 330, r.bottom + 6) + 'px';
+    setTimeout(() => document.addEventListener('mousedown', calOutside, true), 0);
   }
-  $('#date-jump').addEventListener('change', (e) => {
-    if (!e.target.value) return;
-    if (ui.view === 'month') { ui.month = L.monthStart(e.target.value); gotoMonthWeek(e.target.value, 1); return; }
-    showDate(e.target.value);
-    render();
-  });
 
   function exportData() {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
@@ -3788,8 +3914,12 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeMenu();
-    if (document.querySelector('dialog[open]')) return;
+    if (e.key === 'Escape') { closeMenu(); closeCal(); }
+    if (e.key === 'Escape' && !e.defaultPrevented && !document.querySelector('dialog[open]:modal')) {
+      const dr = document.querySelector('dialog.drawer[open]');
+      if (dr) { const ev = new Event('cancel', { cancelable: true }); dr.dispatchEvent(ev); if (!ev.defaultPrevented) dr.close(); return; }
+    }
+    if (document.querySelector('dialog[open]:not(.drawer)')) return;
     const tag = (e.target.tagName || '').toLowerCase();
     const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
     if (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') || (!typing && e.key === '/')) { e.preventDefault(); openSearch(); return; }
