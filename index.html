@@ -330,7 +330,7 @@ dialog textarea { resize: vertical; min-height: 84px; line-height: 20px; font-fa
 .done-view .todo.done .todo-text { color: var(--muted); }
 .done-view .date-prefix { min-width: 40px; }
 .done-empty { margin: 0; padding: 28px 18px; color: var(--muted); }
-.donetab { margin-right: 8px; }
+.donetab, .archtab { margin-right: 8px; }
 
 /* ---------- Kürzel direkt am Text ---------- */
 .todo-text .pbadge { margin-left: 7px; vertical-align: 1px; line-height: 15px; }
@@ -460,6 +460,70 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 .band.colored .ibtn.on { color: inherit; }
 @media (max-width: 700px) { .band .reorder-btn, .band .right .pageno { display: none; } }
 
+/* ---------- Mitschriften-Kacheln: klein (Name und Datum) ---------- */
+.mcard { display: flex; flex-direction: column; gap: 1px; padding: 5px 9px 6px; margin-bottom: 5px; border-radius: 6px; }
+.mcard .mc-title { font: 600 14px/18px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mcard .mc-date { font-size: 12px; line-height: 15px; color: var(--muted); }
+.newmin { margin-bottom: 8px; padding: 4px 10px; font-size: 13px; }
+
+/* ---------- Kalenderwoche ---------- */
+.col-date .kw { font-weight: 800; color: var(--accent); }
+.mkw { position: absolute; top: 4px; right: 6px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; color: var(--muted); opacity: 0.85; pointer-events: none; }
+
+/* ---------- Sachstand ---------- */
+.sach-col .sach-title { color: var(--text); }
+.sach-col .list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lvls { display: flex; gap: 5px; align-items: center; margin-top: 8px; }
+.lvl { width: 13px; height: 13px; padding: 0; border-radius: 50%; border: 2px solid var(--faint); background: none; }
+.lvl[aria-pressed="true"] { transform: scale(1.2); }
+.lvl-ok { border-color: #2e9e5b; } .lvl-ok[aria-pressed="true"] { background: #2e9e5b; }
+.lvl-warn { border-color: #e0a100; } .lvl-warn[aria-pressed="true"] { background: #e0a100; }
+.lvl-bad { border-color: #d4372c; } .lvl-bad[aria-pressed="true"] { background: #d4372c; }
+.lvl-none[aria-pressed="true"] { background: var(--faint); }
+.sach-text { font-size: 17px; line-height: 24px; font-weight: 500; white-space: pre-wrap; overflow-wrap: anywhere; padding: 8px 10px; margin: 4px -10px 0; border-radius: 8px; cursor: text; border-left: 4px solid transparent; }
+.sach-text:hover, .sach-text:focus-visible { background: color-mix(in srgb, var(--text) 5%, transparent); outline: none; }
+.sach-text.empty { color: var(--faint); font-weight: 400; }
+.sach-ok .sach-text { border-left-color: #2e9e5b; } .sach-warn .sach-text { border-left-color: #e0a100; } .sach-bad .sach-text { border-left-color: #d4372c; }
+.sach-edit { width: 100%; box-sizing: border-box; font: 500 17px/24px var(--font); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 10px; background: var(--bg); color: var(--text); resize: vertical; min-height: 140px; margin-top: 4px; }
+.sach-edit:focus { outline: none; }
+.sach-meta, .sach-hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+
+/* ---------- Archiv ---------- */
+.lists.archive-view { display: block; padding: 0 46px 16px; }
+.arch-wrap { max-width: 980px; margin: 0 auto; padding-top: 14px; }
+.arch-search { width: 100%; box-sizing: border-box; font-size: 16px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); }
+.arch-search:focus { outline: none; border-color: var(--accent); }
+.asec { font: 400 22px/24px var(--head); text-transform: uppercase; margin: 18px 0 8px; }
+.agrid { display: grid; gap: 8px; }
+.acard { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); overflow: hidden; }
+.abar { align-self: stretch; width: 6px; background: var(--c, var(--muted)); flex: none; }
+.abody { flex: 1; min-width: 0; padding: 8px 0; }
+.atitle { font-weight: 700; font-size: 15px; }
+.ameta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.astatus { font-size: 14px; margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.astatus.big { -webkit-line-clamp: unset; font-size: 16px; line-height: 23px; display: block; }
+.aact { display: flex; gap: 6px; padding-right: 10px; flex: none; }
+.aact button, .adhead button { border: 1px solid var(--line); background: none; border-radius: 6px; padding: 5px 11px; font-size: 13px; color: var(--text); }
+.aact button:hover, .adhead button:hover { background: var(--band); }
+.adhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adhead h2 { margin: 0; font: 400 30px/32px var(--head); text-transform: uppercase; }
+.adhead .spacer { flex: 1; }
+.adhead .danger { color: var(--accent); }
+.alist { list-style: none; margin: 0; padding: 0; }
+.arow { display: flex; align-items: baseline; gap: 10px; padding: 6px 4px; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 15px; }
+.arow:hover, .arow:focus-visible { background: color-mix(in srgb, var(--text) 4%, transparent); outline: none; }
+.arow .abox { color: var(--muted); }
+.arow .ad { color: var(--muted); font-size: 13px; min-width: 78px; }
+.arow .at { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.arch-empty { color: var(--muted); font-size: 15px; line-height: 22px; margin: 18px 0; }
+@media (max-width: 700px) { .lists.archive-view { padding: 0 14px 16px; } .acard { flex-wrap: wrap; } .aact { padding: 0 10px 8px 18px; } }
+
+/* Interne Projekte: dezenter, unter den übrigen Aufgaben des Tages */
+.pbadge.outline { background: transparent; border: 1px solid currentColor; line-height: 13px; height: 15px; padding: 0 4px; }
+.mchip .pbadge.outline { line-height: 12px; height: 14px; }
+.day .todo.internal .todo-text, .mchip.internal .mtext { color: var(--muted, #8a8a8a); }
+.day .todo:not(.internal) + .todo.internal { margin-top: 6px; border-top: 1px solid var(--line, rgba(128,128,128,.25)); padding-top: 6px; }
+
 </style>
 </head>
 <body>
@@ -512,7 +576,8 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     <form method="dialog" id="project-form">
       <h2 id="project-dialog-title">Neues Projekt</h2>
       <label>Name<input id="project-name" type="text" required maxlength="40" autocomplete="off"></label>
-      <label>Kürzel (Pflicht, max. 5 Zeichen)<input id="project-code" type="text" required maxlength="5" autocomplete="off" spellcheck="false" placeholder="z. B. NEU"></label>
+      <label>Kürzel (Pflicht, max. 10 Zeichen)<input id="project-code" type="text" required maxlength="10" autocomplete="off" spellcheck="false" placeholder="z. B. NEU"></label>
+      <label class="check-row"><input id="project-internal" type="checkbox"> Interne Aufgaben (EDV, Außenauftritt, Besprechungen …) – stehen am Tag unter den übrigen</label>
       <fieldset>
         <legend>Farbe</legend>
         <div id="project-colors" class="swatches"></div>
@@ -637,8 +702,10 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
         <li><b>Klick auf den Text</b>: Details öffnen – Text, Datum, Liste, Wiederholung, Notizen und Unteraufgaben</li>
         <li>Oben rechts: <b>5 Tage | 7 Tage</b> wählt die sichtbaren Tage (5 Tage blendet Samstag und Sonntag aus, der heutige Tag steht vorn), <b>Woche | Monat</b> die Ansicht; im Monat öffnet ein Klick auf den Tag die Woche</li>
         <li>Erledigte Aufgaben liegen unter <b>Erledigt</b> (Tab rechts unten), die zuletzt abgehakten oben</li>
-        <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 5 Zeichen)</li>
+        <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
+        <li><b>Archiv</b>: Projekte über das Menü „⋮“ archivieren; sie verschwinden aus Kalender und Suche, bleiben im Reiter <b>Archiv</b> durchsuchbar und lassen sich wiederherstellen. Die Spalte <b>Sachstand</b> hält den aktuellen Stand je Projekt in wenigen Worten fest</li>
+        <li><b>Interne Projekte</b> (Haken im Projektdialog): ihre Aufgaben stehen am Tag unter den übrigen, abgesetzt und dezenter; Priorität und Fristen bleiben oben. Neue Listen sind weiterhin möglich</li>
         <li>Auf dem Handy unten <b>wischen</b>, um zwischen Geplant, Fristen, Mitschriften und Listen zu wechseln</li>
         <li>Unten zeigt ein Projekt-Tab seine Listen und alle datierten Aufgaben unter „Geplant“</li>
         <li>In eine freie Zeile klicken und tippen, <b>Enter</b> speichert und macht in der nächsten Zeile weiter</li>
@@ -782,7 +849,8 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   /** Offene Fristen, deren Datum vor `today` liegt (ältere zuerst) – für den Hinweis auf dem heutigen Tag. */
   function overdueFristen(state, today) {
     const ids = deadlineListIds(state);
-    return state.todos.filter((t) => !t.done && t.date && t.date < today && t.listId && ids.has(t.listId))
+    const arch = archivedIds(state);
+    return state.todos.filter((t) => !t.done && t.date && t.date < today && t.listId && ids.has(t.listId) && !arch.has(t.projectId))
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.order - b.order));
   }
   const isWeekend = (iso) => { const d = parseISO(iso).getDay(); return d === 0 || d === 6; };
@@ -807,6 +875,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       DEFAULT_LISTS.forEach((name, i) => s.lists.push({ id: uid(), projectId: p.id, name, order: i + 1 }));
     }
     renumberProjects(s);
+    if (s.projects.every((p) => p.archived)) { delete s.projects[0].archived; delete s.projects[0].archivedAt; } // mindestens ein aktives Projekt
   }
   /** Reihenfolge der Projekt-Reiter: nach `order` (fehlt es, ans Ende), danach lückenlos 1, 2, 3 … */
   function renumberProjects(s) {
@@ -844,6 +913,11 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
           const proj = { id: p.id, name: p.name, code: cleanCode(p.code) || deriveCode(p.name), color: typeof p.color === 'string' ? p.color : '#8a8a8a' };
           if (Number.isFinite(p.updatedAt)) proj.updatedAt = p.updatedAt;
           if (Number.isFinite(p.order)) proj.order = p.order;
+          if (p.internal) proj.internal = true;
+          if (p.archived) { proj.archived = true; if (typeof p.archivedAt === 'string') proj.archivedAt = p.archivedAt; }
+          if (typeof p.status === 'string' && p.status.trim()) proj.status = p.status.trim().slice(0, 600);
+          if (['ok', 'warn', 'bad'].includes(p.statusLevel)) proj.statusLevel = p.statusLevel;
+          if (typeof p.statusAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.statusAt)) proj.statusAt = p.statusAt;
           s.projects.push(proj);
         }
       }
@@ -1128,16 +1202,23 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   // ---------- Sortierung ----------
   const byOrder = (a, b) => a.order - b.order;
 
+  /** IDs archivierter Projekte – ihre Aufgaben erscheinen weder im Kalender noch in Suche und „Erledigt“. */
+  function archivedIds(state) { return new Set(state.projects.filter((p) => p.archived).map((p) => p.id)); }
   function todosOnDate(state, iso) {
-    return state.todos.filter((t) => t.date === iso && !t.done).sort((a, b) => ((b.prio ? 1 : 0) - (a.prio ? 1 : 0)) || a.order - b.order);
+    const arch = archivedIds(state);
+    const intern = internalIds(state);
+    const tier = (t) => (t.prio ? 0 : intern.has(t.projectId) ? 2 : 1);
+    return state.todos.filter((t) => t.date === iso && !t.done && !arch.has(t.projectId)).sort((a, b) => (tier(a) - tier(b)) || a.order - b.order);
   }
+  function internalIds(state) { return new Set(state.projects.filter((p) => p.internal).map((p) => p.id)); }
   function todosInList(state, listId) {
     return state.todos.filter((t) => !t.date && t.listId === listId && !t.done).sort(byOrder);
   }
   /** Alle erledigten Aufgaben, zuletzt abgehakte zuerst. Ohne Zeitstempel (Altdaten) ganz unten. */
   function doneTodos(state) {
+    const arch = archivedIds(state);
     return state.todos
-      .filter((t) => t.done)
+      .filter((t) => t.done && !arch.has(t.projectId))
       .sort((a, b) => {
         const x = a.doneAt || '', y = b.doneAt || '';
         return x < y ? 1 : x > y ? -1 : a.text < b.text ? -1 : 1;
@@ -1166,7 +1247,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     const code = words.length > 1 ? words.map((w) => w[0]).join('') : words[0];
     return code.slice(0, words.length > 1 ? 5 : 4).toUpperCase();
   }
-  const cleanCode = (c) => (typeof c === 'string' ? c.replace(/\s+/g, '').slice(0, 5) : '');
+  const cleanCode = (c) => (typeof c === 'string' ? c.replace(/\s+/g, '').slice(0, 10) : '');
 
   function nextOrder(state, iso) {
     const list = state.todos.filter((t) => t.date === iso);
@@ -1193,8 +1274,9 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
    * (Wiederholungen würden sich sonst Tag für Tag stapeln).
    */
   function rollover(state, today) {
+    const arch = archivedIds(state);
     const late = state.todos
-      .filter((t) => !t.done && !t.recurId && t.date && t.date < today && !isDeadline(state, t))
+      .filter((t) => !t.done && !t.recurId && t.date && t.date < today && !isDeadline(state, t) && !arch.has(t.projectId))
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.order - b.order));
     if (!late.length) return 0;
     const existing = state.todos.filter((t) => t.date === today && !late.includes(t));
@@ -1225,8 +1307,10 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     const list = todosOnDate(state, iso).filter((x) => x.id !== id);
     const i = index == null ? list.length : Math.max(0, Math.min(index, list.length));
     // Priorisierte stehen immer oben: die Reihenfolge wird nur innerhalb der eigenen Gruppe bestimmt.
-    const group = list.filter((x) => !!x.prio === !!t.prio);
-    t.order = orderForIndex(group, list.slice(0, i).filter((x) => !!x.prio === !!t.prio).length);
+    const intern = internalIds(state);
+    const tier = (x) => (x.prio ? 0 : intern.has(x.projectId) ? 2 : 1);
+    const group = list.filter((x) => tier(x) === tier(t));
+    t.order = orderForIndex(group, list.slice(0, i).filter((x) => tier(x) === tier(t)).length);
     if (t.date !== iso) delete t.origDate;
     t.date = iso;
     return true;
@@ -1285,7 +1369,9 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   function materialize(state, today) {
     let created = 0;
     const floor = addDays(today, -400); // sehr alte Serien nicht rückwirkend füllen
+    const arch = archivedIds(state);
     for (const r of state.recurs) {
+      if (arch.has(r.projectId)) continue;
       let d = r.through ? addDays(r.through, 1) : r.start;
       if (d < floor) d = floor;
       for (; d <= today; d = addDays(d, 1)) {
@@ -1309,19 +1395,46 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   /** Noch nicht erzeugte Wiederholungen an einem zukünftigen Tag (blass dargestellt). */
   function virtualOn(state, iso, today) {
     if (iso <= today) return [];
-    return state.recurs.filter((r) => occursOn(r, iso) && !state.todos.some((t) => t.recurId === r.id && t.date === iso));
+    const arch = archivedIds(state);
+    return state.recurs.filter((r) => !arch.has(r.projectId) && occursOn(r, iso) && !state.todos.some((t) => t.recurId === r.id && t.date === iso));
   }
 
   // ---------- Suche ----------
   function search(state, query) {
     const q = query.trim().toLowerCase();
     if (!q) return [];
+    const arch = archivedIds(state);
     return state.todos
-      .filter((t) => t.text.toLowerCase().includes(q)
+      .filter((t) => !arch.has(t.projectId) && (t.text.toLowerCase().includes(q)
         || (t.notes || '').toLowerCase().includes(q)
-        || (t.subtasks || []).some((x) => x.text.toLowerCase().includes(q)))
+        || (t.subtasks || []).some((x) => x.text.toLowerCase().includes(q))))
       .sort((a, b) => (a.done - b.done) || ((a.date || '9999') < (b.date || '9999') ? -1 : 1))
       .slice(0, 60);
+  }
+
+  /** Suche im Archiv: archivierte Projekte (Name, Kürzel, Sachstand), ihre Aufgaben (auch erledigte) und Mitschriften. */
+  function searchArchive(state, query) {
+    const q = String(query || '').trim().toLowerCase();
+    const arch = state.projects.filter((p) => p.archived);
+    const ids = new Set(arch.map((p) => p.id));
+    const has = (v) => String(v || '').toLowerCase().includes(q);
+    if (!q) return { projects: arch, todos: [], minutes: [] };
+    return {
+      projects: arch.filter((p) => has(p.name) || has(p.code) || has(p.status)),
+      todos: state.todos.filter((t) => ids.has(t.projectId) && (has(t.text) || has(t.notes) || (t.subtasks || []).some((x) => has(x.text))))
+        .sort((a, b) => (a.done - b.done) || ((a.date || '9999') < (b.date || '9999') ? -1 : 1)).slice(0, 100),
+      minutes: state.minutes.filter((m) => ids.has(m.projectId) && (has(m.title) || has(m.body) || m.participants.some((x) => has(x.name) || has(x.org)))).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 100),
+    };
+  }
+
+  /** ISO-Kalenderwoche (Montag als Wochenbeginn, Woche 1 enthält den ersten Donnerstag). */
+  function isoWeek(iso) {
+    const d = parseISO(iso);
+    const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    t.setDate(t.getDate() - ((t.getDay() + 6) % 7) + 3); // Donnerstag der Woche
+    const jan4 = new Date(t.getFullYear(), 0, 4);
+    const week = 1 + Math.round(((t - jan4) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
+    return { year: t.getFullYear(), week };
   }
 
   // ---------- Text: Überschriften, Auszeichnung, Schnelleingabe ----------
@@ -1426,7 +1539,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     todosOnDate, todosInList, listsOf, plannedForProject, nextOrder, nextOrderInList,
     rollover, orderForIndex, moveTodo, moveToList, reorderLists,
     occursOn, materialize, virtualOn, search,
-    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople, reorderProjects, renumberProjects,
+    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople, archivedIds, internalIds, searchArchive, isoWeek, reorderProjects, renumberProjects,
   };
 });
 
@@ -1912,6 +2025,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   const fmtMonth = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' });
   const fmtTime = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
   const fmtMon = new Intl.DateTimeFormat('de-DE', { month: 'short' });
+  const fmtFull = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const fmtMid = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
 
   function h(tag, attrs, ...kids) {
@@ -1974,8 +2088,8 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   }
   function badge(p) {
     const b = h('span', { class: 'pbadge', title: p.name }, p.code || L.deriveCode(p.name));
-    b.style.background = p.color;
-    b.style.color = textOn(p.color);
+    if (p.internal) { b.classList.add('outline'); b.style.color = p.color; b.style.borderColor = p.color; }
+    else { b.style.background = p.color; b.style.color = textOn(p.color); }
     return b;
   }
 
@@ -1989,9 +2103,11 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 
   const projectById = (id) => state.projects.find((p) => p.id === id);
   const listById = (id) => state.lists.find((l) => l.id === id);
-  const curProject = () => projectById(ui.projectId) || state.projects[0];
+  const activeProjects = () => state.projects.filter((p) => !p.archived);
+  const firstActive = () => activeProjects()[0] || state.projects[0];
+  const curProject = () => { const p = projectById(ui.projectId); return p && !p.archived ? p : firstActive(); };
   // „Geplant“ steht links, sobald das Projekt datierte Aufgaben hat (ab dem zweiten Projekt und auf der Projektseite immer).
-  const showPlanned = () => ui.mode === 'max' || state.projects.indexOf(curProject()) > 0 || L.plannedForProject(state, curProject().id).length > 0;
+  const showPlanned = () => ui.mode === 'max' || activeProjects().indexOf(curProject()) > 0 || L.plannedForProject(state, curProject().id).length > 0;
   const mobileMq = window.matchMedia ? window.matchMedia('(max-width: 700px)') : { matches: false };
   if (mobileMq.addEventListener) mobileMq.addEventListener('change', () => render());
   const isMobile = () => !!mobileMq.matches;
@@ -2000,6 +2116,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   let lastPer = perPage();
   window.addEventListener('resize', () => { const n = perPage(); if (n !== lastPer) { lastPer = n; render(); } });
   const PLANNED = { planned: true, id: 'planned' };
+  const SACH = { sachstand: true, id: 'sachstand' }; // Spalte „Sachstand“ ganz hinten
   const MINUTES = { minutes: true, id: 'minutes' }; // Platzhalter-Spalte „Mitschriften“ hinter „Fristen“
 
   let toastTimer = null;
@@ -2025,7 +2142,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       const before = state;
       state = L.normalize(JSON.parse(snapshot));
       L.markChanged(state, before, Date.now());
-      if (!projectById(ui.projectId)) ui.projectId = state.projects[0].id;
+      if (!projectById(ui.projectId)) ui.projectId = firstActive().id;
       saveSoon();
       render();
     });
@@ -2051,7 +2168,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 
   // ---------- Aufgaben-Operationen ----------
   function addTodo(raw, where) {
-    const parsed = L.parseInput(raw, state.projects, today);
+    const parsed = L.parseInput(raw, activeProjects(), today);
     if (!parsed.text) return false;
     let date = parsed.date !== undefined ? parsed.date : where.date || null;
     const list = where.listId ? listById(where.listId) : null;
@@ -2250,7 +2367,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 
   function weekArea() {
     const days = L.daysForSpan(L.addDays(today, ui.offset), span());
-    const daysEl = h('div', { class: 'days' }, days.map(dayColumn));
+    const daysEl = h('div', { class: 'days' }, days.map((d, i) => dayColumn(d, i)));
     if (days.length > 5) daysEl.classList.add('dense');
     daysEl.style.gridTemplateColumns = 'repeat(' + days.length + ', minmax(150px, 1fr))';
     return h('section', { class: 'week' },
@@ -2265,7 +2382,9 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
         edgeSmall('calendar', 'Zu Datum springen', (e) => openDatePicker(e.currentTarget))));
   }
 
-  function dayColumn(iso) {
+  /** „ · KW 43“ am ersten sichtbaren Tag und an jedem Montag. */
+  const kwLabel = (iso, first) => (first || L.parseISO(iso).getDay() === 1 ? h('span', { class: 'kw' }, ' · KW ' + L.isoWeek(iso).week) : null);
+  function dayColumn(iso, idx) {
     const d = L.parseISO(iso);
     const items = h('ul', { class: 'items' }, [
       ...(iso === today ? L.overdueFristen(state, today).map((t) => todoItem(t, { showProject: true, overdue: true })) : []),
@@ -2274,7 +2393,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     for (const r of L.virtualOn(state, iso, today)) items.append(virtualItem(r));
     const col = h('section', { class: 'day' + (iso === today ? ' today' : '') + (iso < today ? ' past' : ''), 'data-date': iso },
       h('header', { class: 'col-head' },
-        h('div', { class: 'col-date' }, fmtDate.format(d)),
+        h('div', { class: 'col-date' }, fmtDate.format(d), kwLabel(iso, idx === 0)),
         h('h2', { class: 'col-name' }, fmtWeekday.format(d))),
       items,
       fillArea('day-' + iso, iso >= today, (raw) => addTodo(raw, { date: iso })));
@@ -2345,7 +2464,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     const heading = L.isHeading(t.text);
     const p = t.projectId ? projectById(t.projectId) : null;
     const frist = isFrist(t);
-    const li = h('li', { class: 'todo' + (t.done ? ' done' : '') + (heading ? ' heading' : '') + (frist ? ' frist' : '') + (opts.overdue ? ' overdue' : ''), 'data-id': t.id, draggable: t.done || opts.overdue ? null : 'true', tabindex: '0', title: 'Klicken für Details' });
+    const li = h('li', { class: 'todo' + (t.done ? ' done' : '') + (heading ? ' heading' : '') + (frist ? ' frist' : '') + (opts.overdue ? ' overdue' : '') + (p && p.internal && !t.prio && !frist ? ' internal' : ''), 'data-id': t.id, draggable: t.done || opts.overdue ? null : 'true', tabindex: '0', title: 'Klicken für Details' });
     const meta = indicators(t);
     if (!t.done && t.origDate && t.origDate !== t.date) {
       meta.push(h('span', { class: 'carried', title: 'Weitergeschoben von ' + fmtShort.format(L.parseISO(t.origDate)) }, '↪'));
@@ -2383,7 +2502,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   function monthChip(t, overdue) {
     const heading = L.isHeading(t.text);
     const p = t.projectId ? projectById(t.projectId) : null;
-    const li = h('li', { class: 'mchip' + (heading ? ' heading' : '') + (isFrist(t) ? ' frist' : '') + (overdue ? ' overdue' : ''), 'data-id': t.id, draggable: overdue ? null : 'true', title: 'Klicken für Details' },
+    const li = h('li', { class: 'mchip' + (heading ? ' heading' : '') + (isFrist(t) ? ' frist' : '') + (overdue ? ' overdue' : '') + (p && p.internal && !t.prio ? ' internal' : ''), 'data-id': t.id, draggable: overdue ? null : 'true', title: 'Klicken für Details' },
       heading ? null : checkBox(t, 'small'),
       overdue ? h('span', { class: 'frist-flag' }, '!') : null,
       h('span', { class: 'mtext' }, t.prio && !heading ? h('span', { class: 'prio' }, '!') : null, rich(heading ? L.headingText(t.text) : t.text)),
@@ -2410,6 +2529,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       'data-date': iso, title: 'Klicken: diesen Tag in der Woche öffnen', onclick: () => goToDay(iso),
     },
     h('span', { class: 'mnum' }, d.getDate()),
+    d.getDay() === 1 ? h('span', { class: 'mkw', title: 'Kalenderwoche ' + L.isoWeek(iso).week }, 'KW ' + L.isoWeek(iso).week) : null,
     d.getDate() === 1 ? h('span', { class: 'mmon' }, fmtMon.format(d).replace('.', '')) : null,
     h('ul', { class: 'mitems' }, chips.slice(0, MONTH_MAX)),
     rest > 0 ? h('button', { type: 'button', class: 'mmore', onclick: (e) => { e.stopPropagation(); goToDay(iso); } }, '+ ' + rest + ' weitere') : null);
@@ -2519,7 +2639,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     const entries = [];
     if (lists.length && lists[0].deadline) entries.push(lists[0]);
     if (showPlanned()) entries.push(PLANNED);
-    entries.push(...lists.filter((l) => !(l.deadline && entries.includes(l))), MINUTES);
+    entries.push(...lists.filter((l) => !(l.deadline && entries.includes(l))), MINUTES, SACH);
     const per = perPage();
     const pages = Math.max(1, Math.ceil(entries.length / per));
     ui.page = Math.max(0, Math.min(ui.page, pages - 1));
@@ -2531,13 +2651,13 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   }
 
   function band() {
-    if (ui.showDone) {
+    if (ui.showDone || ui.showArchive) {
       return h('div', { class: 'band' },
         h('div', { class: 'left' }, ui.mode === 'max' ? null : ibtn(ui.mode === 'closed' ? 'chev-u' : 'chev-d', ui.mode === 'closed' ? 'Listen einblenden' : 'Listen ausblenden', () => {
           ui.mode = ui.mode === 'closed' ? 'open' : 'closed';
           render();
         })),
-        h('span', { class: 'band-title' }, 'Erledigt'));
+        h('span', { class: 'band-title' }, ui.showArchive ? 'Archiv' : 'Erledigt'));
     }
     const { pages } = pageInfo();
     const proj = curProject();
@@ -2593,17 +2713,13 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   }
 
   function listsArea() {
+    if (ui.showArchive) return archiveArea();
     if (ui.showDone) return doneArea();
     const p = curProject();
-    const { entries, per, pages } = pageInfo();
+    const { entries, per } = pageInfo();
     const cols = [];
     const visible = entries.slice(ui.page * per, ui.page * per + per);
-    visible.forEach((l) => cols.push(l.minutes ? minutesColumn(p) : l.planned ? plannedColumn(p) : listColumn(l)));
-    if (!isMobile() && cols.length < per && ui.page === pages - 1) {
-      cols.push(h('div', { class: 'list-col' },
-        h('div', { class: 'list-head new-list' }, h('button', { type: 'button', onclick: addList }, '+ Neue Liste')),
-        h('div', { class: 'fill' })));
-    }
+    visible.forEach((l) => cols.push(l.minutes ? minutesColumn(p) : l.sachstand ? sachstandColumn(p) : l.planned ? plannedColumn(p) : listColumn(l)));
     const section = h('section', { class: 'lists', 'aria-label': 'Listen von ' + p.name }, cols);
     section.style.setProperty('--cols', String(per));
     if (isMobile()) {
@@ -2624,6 +2740,158 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     return section;
   }
 
+  // ---------- Sachstand ----------
+  const LEVELS = [['', 'Ohne Ampel'], ['ok', 'Läuft'], ['warn', 'Achtung'], ['bad', 'Kritisch']];
+  function sachstandColumn(p) {
+    const lvl = h('div', { class: 'lvls', role: 'group', 'aria-label': 'Ampel' }, LEVELS.map(([v, label]) =>
+      h('button', { type: 'button', class: 'lvl' + (v ? ' lvl-' + v : ' lvl-none'), title: label, 'aria-label': label, 'aria-pressed': String((p.statusLevel || '') === v),
+        onclick: () => { if (v) p.statusLevel = v; else delete p.statusLevel; p.statusAt = today; saveSoon(); render(); } })));
+    let body;
+    if (ui.editStatus === p.id) {
+      const ta = h('textarea', { class: 'sach-edit', maxlength: '600', rows: '7', 'data-focus': 'sach', 'aria-label': 'Sachstand', placeholder: 'Aktueller Stand in wenigen Worten …' });
+      ta.value = p.status || '';
+      let done = false;
+      const finish = (commit, immediate) => {
+        if (done) return;
+        done = true;
+        ui.editStatus = null;
+        const v = ta.value.trim();
+        if (commit && v !== (p.status || '')) {
+          if (v) p.status = v; else delete p.status;
+          p.statusAt = today;
+          saveSoon();
+        }
+        if (immediate) render(); else renderLater();
+      };
+      ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); finish(false, true); }
+        else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); finish(true, true); }
+      });
+      ta.addEventListener('blur', () => finish(true, false));
+      body = [ta, h('p', { class: 'sach-hint' }, 'Kurz und bündig – Strg+Enter oder Klick daneben speichert.')];
+    } else {
+      body = [
+        h('div', { class: 'sach-text' + (p.status ? '' : ' empty'), tabindex: '0', title: 'Klicken zum Bearbeiten',
+          onclick: () => { ui.editStatus = p.id; ui.focus = 'sach'; render(); },
+          onkeydown: (e) => { if (e.key === 'Enter') { ui.editStatus = p.id; ui.focus = 'sach'; render(); } } },
+        p.status || 'Aktuellen Stand in wenigen Worten beschreiben …'),
+        p.statusAt ? h('p', { class: 'sach-meta' }, 'Stand: ' + fmtFull.format(L.parseISO(p.statusAt))) : null,
+      ];
+    }
+    return h('section', { class: 'list-col sach-col' + (p.statusLevel ? ' sach-' + p.statusLevel : '') },
+      h('div', { class: 'list-head' }, h('h3', { class: 'sach-title' }, 'Sachstand'), lvl),
+      ...body,
+      h('div', { class: 'fill' }));
+  }
+
+  // ---------- Archiv ----------
+  function archiveProject(id) {
+    const p = projectById(id);
+    if (!p || p.archived) return;
+    if (activeProjects().length <= 1) { toast('Das letzte aktive Projekt kann nicht archiviert werden.'); return; }
+    withUndo('Projekt „' + p.name + '“ archiviert (Reiter „Archiv“).', () => {
+      p.archived = true;
+      p.archivedAt = today;
+      ui.projectId = firstActive().id;
+      ui.page = 0;
+      ui.reorder = false;
+    });
+  }
+  function restoreProject(id) {
+    const p = projectById(id);
+    if (!p) return;
+    delete p.archived;
+    delete p.archivedAt;
+    ui.projectId = p.id;
+    ui.showArchive = false;
+    ui.showDone = false;
+    ui.archiveProject = null;
+    ui.page = 0;
+    saveSoon();
+    render();
+    toast('Projekt „' + p.name + '“ wiederhergestellt.');
+  }
+  const projectStats = (p) => ({ todos: state.todos.filter((t) => t.projectId === p.id).length, minutes: state.minutes.filter((m) => m.projectId === p.id).length });
+  function archiveArea() {
+    const root = h('section', { class: 'lists archive-view', 'aria-label': 'Archiv' });
+    const open = ui.archiveProject && projectById(ui.archiveProject);
+    if (open && open.archived) { root.append(archiveDetail(open)); return root; }
+    ui.archiveProject = null;
+    const results = h('div', { class: 'arch-results' });
+    const inp = h('input', { type: 'search', class: 'arch-search', placeholder: 'Archiv durchsuchen: Projekte, Aufgaben, Mitschriften …', 'aria-label': 'Archiv durchsuchen', 'data-focus': 'archsearch', autocomplete: 'off' });
+    inp.value = ui.archiveQuery || '';
+    const draw = () => results.replaceChildren(archiveResults(ui.archiveQuery || ''));
+    inp.addEventListener('input', () => { ui.archiveQuery = inp.value; draw(); });
+    draw();
+    root.append(h('div', { class: 'arch-wrap' }, inp, results));
+    return root;
+  }
+  function projectCard(p) {
+    const st = projectStats(p);
+    const bar = h('span', { class: 'abar' });
+    bar.style.setProperty('--c', p.color);
+    return h('div', { class: 'acard' }, bar,
+      h('div', { class: 'abody' },
+        h('div', { class: 'atitle' }, p.name, ' ', badge(p)),
+        h('div', { class: 'ameta' }, (p.archivedAt ? 'archiviert am ' + fmtFull.format(L.parseISO(p.archivedAt)) + ' · ' : '') + st.todos + ' Aufgaben · ' + st.minutes + ' Mitschriften'),
+        p.status ? h('div', { class: 'astatus' }, p.status) : null),
+      h('div', { class: 'aact' },
+        h('button', { type: 'button', onclick: () => { ui.archiveProject = p.id; render(); } }, 'Ansehen'),
+        h('button', { type: 'button', onclick: () => restoreProject(p.id) }, 'Wiederherstellen')));
+  }
+  function todoRow(t) {
+    return h('li', { class: 'arow', tabindex: '0', onclick: () => openEdit(t.id), onkeydown: (e) => { if (e.key === 'Enter') openEdit(t.id); } },
+      h('span', { class: 'abox', 'aria-hidden': 'true' }, t.done ? '☑' : '☐'),
+      t.date ? h('span', { class: 'ad' }, fmtFull.format(L.parseISO(t.date))) : null,
+      h('span', { class: 'at' + (t.done ? ' done-text' : '') }, L.isHeading(t.text) ? L.headingText(t.text) : t.text));
+  }
+  function minuteRow(m, withProject) {
+    const p = withProject ? projectById(m.projectId) : null;
+    return h('li', { class: 'arow', tabindex: '0', onclick: () => openMinute(m.id), onkeydown: (e) => { if (e.key === 'Enter') openMinute(m.id); } },
+      h('span', { class: 'abox', 'aria-hidden': 'true' }, '✎'),
+      h('span', { class: 'ad' }, fmtFull.format(L.parseISO(m.date))),
+      h('span', { class: 'at' }, m.title || 'Besprechung'), p ? badge(p) : null);
+  }
+  function archiveResults(query) {
+    const r = L.searchArchive(state, query);
+    const out = document.createDocumentFragment();
+    const sec = (title, kids) => { if (kids.length) out.append(h('h3', { class: 'asec' }, title), h('div', { class: 'agrid' }, kids)); };
+    if (!state.projects.some((p) => p.archived)) {
+      out.append(h('p', { class: 'arch-empty' }, 'Das Archiv ist leer. Projekte archivieren Sie über das Menü „⋮“ am Projekt-Reiter; sie verschwinden dann aus Kalender, Reitern und Suche, bleiben hier aber durchsuchbar.'));
+      return out;
+    }
+    sec('Projekte', r.projects.map(projectCard));
+    if (r.todos.length) out.append(h('h3', { class: 'asec' }, 'Aufgaben'), h('ul', { class: 'alist' }, r.todos.map((t) => {
+      const li = todoRow(t);
+      const pr = projectById(t.projectId);
+      if (pr) li.append(badge(pr));
+      return li;
+    })));
+    if (r.minutes.length) out.append(h('h3', { class: 'asec' }, 'Mitschriften'), h('ul', { class: 'alist' }, r.minutes.map((m) => minuteRow(m, true))));
+    if (!r.projects.length && !r.todos.length && !r.minutes.length) out.append(h('p', { class: 'arch-empty' }, 'Nichts gefunden.'));
+    return out;
+  }
+  function archiveDetail(p) {
+    const wrap = h('div', { class: 'arch-wrap arch-detail' });
+    wrap.append(h('div', { class: 'adhead' },
+      h('button', { type: 'button', class: 'aback', onclick: () => { ui.archiveProject = null; render(); } }, '← Archiv'),
+      h('h2', {}, p.name, ' ', badge(p)),
+      h('span', { class: 'spacer' }),
+      h('button', { type: 'button', onclick: () => restoreProject(p.id) }, 'Wiederherstellen'),
+      h('button', { type: 'button', class: 'danger', onclick: () => { ui.archiveProject = null; deleteProject(p.id); } }, 'Endgültig löschen')));
+    if (p.status) wrap.append(h('h3', { class: 'asec' }, 'Sachstand' + (p.statusAt ? ' (' + fmtFull.format(L.parseISO(p.statusAt)) + ')' : '')), h('p', { class: 'astatus big' }, p.status));
+    const mins = L.minutesOf(state, p.id);
+    if (mins.length) wrap.append(h('h3', { class: 'asec' }, 'Mitschriften'), h('ul', { class: 'alist' }, mins.map((m) => minuteRow(m, false))));
+    const groups = L.listsOf(state, p.id).map((l) => [l.name, state.todos.filter((t) => t.listId === l.id)]);
+    groups.push(['Ohne Liste', state.todos.filter((t) => t.projectId === p.id && !t.listId)]);
+    for (const [name, todos] of groups) {
+      if (!todos.length) continue;
+      todos.sort((a, b) => (a.done - b.done) || ((a.date || '9999') < (b.date || '9999') ? -1 : 1) || a.order - b.order);
+      wrap.append(h('h3', { class: 'asec' }, name), h('ul', { class: 'alist' }, todos.map(todoRow)));
+    }
+    return wrap;
+  }
+
   // ---------- Mitschriften ----------
   const fmtMin = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const personText = (x) => (x.org ? x.name + ' – ' + x.org : x.name);
@@ -2631,12 +2899,9 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   function minutesColumn(p) {
     const list = L.minutesOf(state, p.id);
     const items = h('ul', { class: 'items minutes' }, list.map((m) => {
-      const preview = L.parseBlocks(m.body).map((b) => (b.t === 'h' || b.t === 'p' ? b.text : b.t === 'hr' ? '' : b.items.map((x) => x.text).join(' · '))).filter(Boolean).join(' ').replace(/\*+/g, '').slice(0, 140);
-      const li = h('li', { class: 'mcard', tabindex: '0', title: 'Mitschrift öffnen' },
-        h('div', { class: 'mtitle' }, m.title || 'Besprechung'),
-        h('div', { class: 'mmeta' }, fmtMin.format(L.parseISO(m.date)) + (timeSpan(m) ? ' · ' + timeSpan(m) : '')),
-        m.participants.length ? h('div', { class: 'mpeople', title: m.participants.map(personText).join('\n') }, '👥 ' + m.participants.map((x) => x.name || x.org).join(', ')) : null,
-        preview ? h('div', { class: 'mprev' }, preview) : null);
+      const li = h('li', { class: 'mcard', tabindex: '0', title: [m.title || 'Besprechung', fmtMin.format(L.parseISO(m.date)) + (timeSpan(m) ? ', ' + timeSpan(m) + ' Uhr' : ''), m.participants.length ? 'Teilnehmer: ' + m.participants.map(personText).join('; ') : ''].filter(Boolean).join('\n') },
+        h('span', { class: 'mc-title' }, m.title || 'Besprechung'),
+        h('span', { class: 'mc-date' }, fmtFull.format(L.parseISO(m.date))));
       li.addEventListener('click', () => openMinute(m.id));
       li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMinute(m.id); } });
       return li;
@@ -2770,14 +3035,16 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 
   // ---------- Projekt-Tabs ----------
   function tabsBar() {
-    const tabs = state.projects.map((p) => {
-      const active = !ui.showDone && p.id === curProject().id;
+    const tabs = activeProjects().map((p) => {
+      const active = !ui.showDone && !ui.showArchive && p.id === curProject().id;
       const count = L.openCountForProject(state, p.id);
       const el = h('div', { class: 'ptab', 'aria-current': active ? 'page' : null },
-        h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.projectId = p.id; ui.showDone = false; ui.page = 0; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, p.name, ' ', h('span', { class: 'count' }, count)),
+        h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.projectId = p.id; ui.showDone = false; ui.showArchive = false; ui.page = 0; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, p.name, ' ', h('span', { class: 'count' }, count)),
         active ? h('button', { type: 'button', class: 'more', title: 'Projekt-Menü', 'aria-label': 'Projekt-Menü', onclick: (e) => showMenu(e.currentTarget, [
           { label: ui.mode === 'max' ? 'Projektseite schließen' : 'Projektseite öffnen', run: () => { ui.mode = ui.mode === 'max' ? 'open' : 'max'; ui.page = 0; render(); } },
+          { label: 'Neue Liste', run: addList },
           { label: 'Umbenennen / Farbe …', run: () => openProjectDialog(p.id) },
+          { label: 'Projekt archivieren', run: () => archiveProject(p.id) },
           { label: 'Projekt löschen', danger: true, run: () => deleteProject(p.id) },
         ]) }, moreIcon()) : null);
       // Reiter per Ziehen umsortieren
@@ -2825,7 +3092,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       return el;
     });
     const doneTab = h('div', { class: 'ptab donetab', 'aria-current': ui.showDone ? 'page' : null },
-      h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.showDone = true; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
+      h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.showDone = true; ui.showArchive = false; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
         'Erledigt ', h('span', { class: 'count' }, state.todos.filter((t) => t.done).length)));
     const plus = h('div', { class: 'ptab' }, h('button', { type: 'button', class: 'tabmain', title: 'Neues Projekt', 'aria-label': 'Neues Projekt', onclick: () => openProjectDialog(null) }, '+'));
     // Auf „+“ ablegen = ans Ende verschieben
@@ -2841,7 +3108,10 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       render();
     });
     tabs.push(plus);
-    return h('footer', { class: 'tabs' }, h('div', { class: 'ptabs' }, tabs), h('div', { class: 'tail' }, doneTab, ibtn('help', 'Bedienung', () => $('#help-dialog').showModal())));
+    const archTab = h('div', { class: 'ptab archtab', 'aria-current': ui.showArchive ? 'page' : null },
+      h('button', { type: 'button', class: 'tabmain', title: 'Archivierte Projekte durchsuchen', onclick: () => { ui.showArchive = true; ui.showDone = false; ui.reorder = false; ui.archiveProject = null; ui.focus = 'archsearch'; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
+        'Archiv ', h('span', { class: 'count' }, state.projects.filter((p) => p.archived).length)));
+    return h('footer', { class: 'tabs' }, h('div', { class: 'ptabs' }, tabs), h('div', { class: 'tail' }, archTab, doneTab, ibtn('help', 'Bedienung', () => $('#help-dialog').showModal())));
   }
   function moreIcon() {
     const svg = document.createElementNS(NS, 'svg');
@@ -2854,7 +3124,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   function deleteProject(id) {
     const p = projectById(id);
     if (!p) return;
-    if (state.projects.length <= 1) { toast('Das letzte Projekt kann nicht gelöscht werden.'); return; }
+    if (!p.archived && activeProjects().length <= 1) { toast('Das letzte aktive Projekt kann nicht gelöscht werden.'); return; }
     const n = state.todos.filter((t) => t.projectId === id && !t.date).length;
     const nm = state.minutes.filter((m) => m.projectId === id).length;
     if ((n || nm) && !window.confirm('Projekt „' + p.name + '“ mit ' + n + ' Aufgabe(n) in Listen und ' + nm + ' Mitschrift(en) löschen?')) return;
@@ -2866,7 +3136,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       state.lists = state.lists.filter((l) => !listIds.has(l.id));
       state.minutes = state.minutes.filter((m) => m.projectId !== id);
       state.projects = state.projects.filter((x) => x.id !== id);
-      ui.projectId = state.projects[0].id;
+      ui.projectId = firstActive().id;
       ui.page = 0;
     });
   }
@@ -3251,7 +3521,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     $('#edit-list-wrap').hidden = ruleOnly;
     const sel = $('#edit-list');
     sel.replaceChildren(h('option', { value: '' }, '– keine Liste –'),
-      ...state.projects.flatMap((p) => L.listsOf(state, p.id).map((l) => h('option', { value: l.id }, p.name + ' › ' + l.name))));
+      ...state.projects.filter((p) => !p.archived || (listId && listById(listId) && listById(listId).projectId === p.id)).flatMap((p) => L.listsOf(state, p.id).map((l) => h('option', { value: l.id }, p.name + ' › ' + l.name))));
     sel.value = listId || '';
     $('#edit-freq').value = rule ? rule.freq : '';
     $('#edit-interval').value = rule ? rule.interval : 1;
@@ -3342,6 +3612,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     $('#project-name').value = p ? p.name : '';
     $('#project-code').value = p ? p.code : '';
     codeTouched = !!p;
+    $('#project-internal').checked = !!(p && p.internal);
     $('#project-name').setCustomValidity('');
     pickedColor = p ? p.color : PROJECT_COLORS[state.projects.length % PROJECT_COLORS.length];
     drawProjectSwatches();
@@ -3370,8 +3641,10 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       p.name = name;
       p.code = code;
       p.color = pickedColor;
+      if ($('#project-internal').checked) p.internal = true; else delete p.internal;
     } else {
       const p = { id: L.uid(), name, code, color: pickedColor, order: state.projects.length + 1 };
+      if ($('#project-internal').checked) p.internal = true;
       state.projects.push(p);
       state.lists.push({ id: L.uid(), projectId: p.id, name: 'Aufgaben', order: 1 });
       L.ensureDeadlineLists(state);
@@ -3428,6 +3701,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
   function jumpTo(t) {
     $('#search-dialog').close();
     ui.showDone = !!t.done;
+    ui.showArchive = false;
     if (t.done) { if (ui.mode === 'closed') ui.mode = 'open'; }
     else if (t.date) {
       ui.view = 'week';
@@ -3477,7 +3751,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       if (!data || !Array.isArray(data.todos)) throw new Error('kein Tagwerk-Backup');
       const next = L.normalize(data);
       if (!window.confirm('Alle aktuellen Daten durch die Sicherung ersetzen? (' + next.todos.length + ' Aufgaben, ' + next.projects.length + ' Projekte)')) return;
-      withUndo('Sicherung geladen.', () => { next.sync = state.sync; next.deleted = state.deleted; state = next; ui.projectId = state.projects[0].id; ui.page = 0; ui.offset = 0; });
+      withUndo('Sicherung geladen.', () => { next.sync = state.sync; next.deleted = state.deleted; state = next; ui.projectId = firstActive().id; ui.page = 0; ui.offset = 0; });
     } catch (err) {
       toast('Die Datei konnte nicht gelesen werden.');
     }
@@ -3532,7 +3806,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
     /** Übernimmt einen zusammengeführten Stand und zeichnet neu. */
     setState(next) {
       state = next;
-      if (!projectById(ui.projectId)) ui.projectId = state.projects[0].id;
+      if (!projectById(ui.projectId)) ui.projectId = firstActive().id;
       saveSoon();
       if (!document.querySelector('dialog[open]') && !(document.activeElement && document.activeElement.tagName === 'INPUT')) render();
     },
@@ -3554,7 +3828,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
       loadError = true;
     }
     if (!window.api && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
-    ui.projectId = state.projects[0].id;
+    ui.projectId = firstActive().id;
     today = L.todayISO();
     ui.month = L.monthStart(today);
     L.materialize(state, today);
