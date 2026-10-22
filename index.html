@@ -211,7 +211,7 @@ dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--m
 dialog::backdrop { background: rgba(0, 0, 0, 0.35); }
 dialog h2 { margin: 0 0 14px; font: 400 28px/28px var(--head); text-transform: uppercase; letter-spacing: 0.01em; }
 dialog label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
-dialog input[type="text"], dialog input[type="date"], dialog input[type="number"], dialog select, dialog textarea {
+dialog input[type="text"], dialog input[type="date"], dialog input[type="time"], dialog input[type="number"], dialog select, dialog textarea {
   display: block; width: 100%; margin-top: 4px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 14px; text-transform: none; letter-spacing: 0; font-weight: 400;
 }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -388,9 +388,44 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
   .edge { width: 34px; }
   .day { padding: 0 12px 12px; }
   .days > .day { scroll-snap-align: start; }
+  .lists { padding: 0; grid-template-columns: none !important; grid-auto-flow: column; grid-auto-columns: 100%; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }
+  .lists > .list-col { scroll-snap-align: start; padding: 0 18px 12px; }
+  .lists.done-view { padding: 0 14px 16px; }
   dialog { width: calc(100vw - 24px); max-width: none; }
   .syncstat { margin-left: 6px; }
 }
+
+/* ---------- Mitschriften ---------- */
+.minutes-title { color: var(--text); }
+.newmin { align-self: flex-start; margin: 2px 0 10px; border: 1px dashed var(--line); background: none; color: var(--muted); border-radius: 6px; padding: 6px 12px; font-size: 14px; }
+.newmin:hover { color: var(--accent); border-color: var(--accent); }
+.mcard { list-style: none; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; margin-bottom: 8px; cursor: pointer; background: var(--bg); }
+.mcard:hover, .mcard:focus-visible { border-color: var(--accent); outline: none; }
+.mtitle { font: 600 15px/19px var(--font); text-transform: none; letter-spacing: 0; overflow-wrap: anywhere; }
+.mmeta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.mpeople { font-size: 12.5px; color: var(--muted); margin-top: 3px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mprev { font-size: 13px; color: var(--text); opacity: .75; margin-top: 5px; line-height: 17px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.mhint { color: var(--faint); font-size: 13px; line-height: 18px; margin: 4px 0; }
+.items.minutes { padding: 0; margin: 0; }
+dialog.minute { width: min(720px, calc(100vw - 24px)); max-height: 92vh; overflow: auto; }
+.row3 { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 10px; }
+.mbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.mtools { display: flex; gap: 4px; flex-wrap: wrap; }
+.mtools button { border: 1px solid var(--line); background: none; border-radius: 6px; padding: 4px 9px; min-width: 34px; font-size: 13px; color: var(--text); }
+.mtools button:hover { background: var(--band); }
+dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-height: 22px; }
+.mpreview { min-height: 240px; max-height: 52vh; overflow: auto; border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font-size: 15px; line-height: 22px; background: var(--bg); }
+.mpreview p { margin: 0 0 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mpreview .mh { font-family: var(--head); font-weight: 400; text-transform: uppercase; margin: 14px 0 6px; line-height: 1.1; }
+.mpreview h3.mh { font-size: 26px; } .mpreview h4.mh { font-size: 21px; } .mpreview h5.mh { font-size: 17px; }
+.mpreview ul, .mpreview ol { margin: 0 0 10px; padding-left: 22px; }
+.mpreview ul.tasks { list-style: none; padding-left: 4px; }
+.mpreview li.task .tbox { margin-right: 6px; color: var(--accent); }
+.mpreview li.task.done { color: var(--muted); text-decoration: line-through; }
+.mpreview hr { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
+.mpreview a { color: var(--accent); }
+.mempty { color: var(--faint); }
+@media (max-width: 700px) { .band .pill { display: none; } .band .dots { flex: 1; justify-content: center; gap: 8px; min-width: 0; } .row3 { grid-template-columns: 1fr 1fr; } .row3 label:first-child { grid-column: 1 / -1; } }
 
 </style>
 </head>
@@ -457,6 +492,45 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
     </form>
   </dialog>
 
+  <dialog id="min-dialog" class="minute">
+    <form method="dialog" id="min-form">
+      <h2 id="min-heading">Neue Mitschrift</h2>
+      <label>Titel<input id="min-title" type="text" maxlength="200" autocomplete="off" placeholder="z. B. Jour fixe Bauablauf"></label>
+      <div class="row3">
+        <label>Datum<input id="min-date" type="date" required></label>
+        <label>Start<input id="min-start" type="time"></label>
+        <label>Ende<input id="min-end" type="time"></label>
+      </div>
+      <label>Teilnehmer<input id="min-people" type="text" maxlength="1000" autocomplete="off" placeholder="Namen, mit Komma getrennt"></label>
+      <div class="mbar">
+        <div id="min-tools" class="mtools" role="toolbar" aria-label="Formatierung">
+          <button type="button" data-fmt="h1" title="Überschrift 1">Ü1</button>
+          <button type="button" data-fmt="h2" title="Überschrift 2">Ü2</button>
+          <button type="button" data-fmt="b" title="Fett (Strg+B)"><b>F</b></button>
+          <button type="button" data-fmt="i" title="Kursiv (Strg+I)"><i>K</i></button>
+          <button type="button" data-fmt="ul" title="Aufzählung">• Liste</button>
+          <button type="button" data-fmt="ol" title="Nummerierte Liste">1. Liste</button>
+          <button type="button" data-fmt="task" title="Checkliste (z. B. Aufgaben, Beschlüsse)">☐ Check</button>
+          <button type="button" data-fmt="link" title="Link einfügen">Link</button>
+          <button type="button" data-fmt="hr" title="Trennlinie">―</button>
+        </div>
+        <div class="seg" role="group" aria-label="Ansicht">
+          <button type="button" id="min-mode-edit" aria-pressed="true">Schreiben</button>
+          <button type="button" id="min-mode-view" aria-pressed="false">Lesen</button>
+        </div>
+      </div>
+      <textarea id="min-body" rows="12" maxlength="200000" placeholder="Mitschrift …" aria-label="Text der Mitschrift"></textarea>
+      <div id="min-preview" class="mpreview" hidden></div>
+      <div class="dialog-actions">
+        <button type="button" id="min-delete" class="danger">Löschen</button>
+        <button type="button" id="min-copy" title="Titel, Daten und Text als Text kopieren">Kopieren</button>
+        <span class="spacer"></span>
+        <button type="button" id="min-cancel">Abbrechen</button>
+        <button type="submit" class="primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="prefs-dialog">
     <form method="dialog" id="prefs-form">
       <h2>Einstellungen</h2>
@@ -506,6 +580,8 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
         <li>Oben rechts: <b>5 Tage | 7 Tage</b> wählt die sichtbaren Tage (5 Tage blendet Samstag und Sonntag aus, der heutige Tag steht vorn), <b>Woche | Monat</b> die Ansicht; im Monat öffnet ein Klick auf den Tag die Woche</li>
         <li>Erledigte Aufgaben liegen unter <b>Erledigt</b> (Tab rechts unten), die zuletzt abgehakten oben</li>
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 5 Zeichen)</li>
+        <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
+        <li>Auf dem Handy unten <b>wischen</b>, um zwischen Geplant, Fristen, Mitschriften und Listen zu wechseln</li>
         <li>Unten zeigt ein Projekt-Tab seine Listen und alle datierten Aufgaben unter „Geplant“</li>
         <li>In eine freie Zeile klicken und tippen, <b>Enter</b> speichert und macht in der nächsten Zeile weiter</li>
         <li>Aufgaben per <b>Ziehen</b> zwischen Tagen, Listen und auf Projekt-Tabs verschieben</li>
@@ -585,6 +661,7 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
       lists: [],
       todos: [],
       recurs: [],
+      minutes: [], // Mitschriften von Besprechungen
       deleted: {}, // Löschvermerke für den Abgleich: { id: Zeitpunkt }
       sync: { hashes: {}, etag: null, fp: null, last: null }, // nur lokal
       settings: { accent: DEFAULT_ACCENT, mode: 'auto', span: 'work' },
@@ -764,6 +841,21 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
         s.recurs.push(rule);
       }
     }
+    if (Array.isArray(raw.minutes)) {
+      for (const m of raw.minutes) {
+        if (!m || typeof m.id !== 'string' || !projectIds.has(m.projectId)) continue;
+        const min = {
+          id: m.id, projectId: m.projectId,
+          title: typeof m.title === 'string' ? m.title.slice(0, 200) : '',
+          date: typeof m.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.date) ? m.date : todayISO(),
+          start: cleanTime(m.start), end: cleanTime(m.end),
+          participants: typeof m.participants === 'string' ? m.participants.slice(0, 1000) : '',
+          body: typeof m.body === 'string' ? m.body.slice(0, 200000) : '',
+        };
+        if (Number.isFinite(m.updatedAt)) min.updatedAt = m.updatedAt;
+        s.minutes.push(min);
+      }
+    }
     if (raw.deleted && typeof raw.deleted === 'object') {
       for (const [id, at] of Object.entries(raw.deleted)) if (Number.isFinite(at)) s.deleted[id] = at;
     }
@@ -780,7 +872,7 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
   }
 
   // ---------- Abgleich zwischen Geräten ----------
-  const COLS = ['projects', 'lists', 'todos', 'recurs'];
+  const COLS = ['projects', 'lists', 'todos', 'recurs', 'minutes'];
   const TOMBSTONE_DAYS = 90;
   function stable(v) {
     if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
@@ -849,7 +941,7 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
   }
   /** Frisch installiert und noch nichts erfasst? Dann übernimmt der erste Abgleich den Stand der Gegenseite. */
   function isPristine(state) {
-    return !state.todos.length && !state.recurs.length && state.projects.length === 1 && state.projects[0].name === 'Meine Listen'
+    return !state.todos.length && !state.recurs.length && !state.minutes.length && state.projects.length === 1 && state.projects[0].name === 'Meine Listen'
       && !Object.keys(state.deleted).length
       && state.lists.every((l) => l.deadline || DEFAULT_LISTS.includes(l.name));
   }
@@ -892,8 +984,52 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
   }
   /** Der Inhalt, der in die Datei im Netz geschrieben wird (ohne lokalen Sync-Stand und ohne gerätespezifische Einstellungen). */
   function uploadText(state) {
-    const o = { version: 2, projects: state.projects, lists: state.lists, todos: state.todos, recurs: state.recurs, deleted: state.deleted };
+    const o = { version: 2, projects: state.projects, lists: state.lists, todos: state.todos, recurs: state.recurs, minutes: state.minutes, deleted: state.deleted };
     return JSON.stringify(o);
+  }
+
+  // ---------- Mitschriften ----------
+  function cleanTime(v) {
+    return typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : '';
+  }
+  /** Mitschriften eines Projekts, neueste Besprechung zuerst. */
+  function minutesOf(state, projectId) {
+    return state.minutes.filter((m) => m.projectId === projectId)
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : (b.start || '').localeCompare(a.start || '')) || (b.updatedAt || 0) - (a.updatedAt || 0));
+  }
+  /**
+   * Text einer Mitschrift in Blöcke zerlegen. Unterstützt: # / ## / ### Überschriften, "- " Aufzählung,
+   * "1. " Nummerierung, "- [ ]" / "- [x]" Checkliste, "---" Trennlinie, sonst Absätze. Inline-Auszeichnung via tokenize().
+   */
+  function parseBlocks(text) {
+    const blocks = [];
+    let cur = null;
+    const flush = () => { cur = null; };
+    for (const raw of String(text || '').split('\n')) {
+      const line = raw.replace(/\s+$/, '');
+      let m;
+      if (!line.trim()) { flush(); continue; }
+      if ((m = /^(#{1,3})\s+(.*)$/.exec(line))) { blocks.push({ t: 'h', level: m[1].length, text: m[2] }); flush(); continue; }
+      if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) { blocks.push({ t: 'hr' }); flush(); continue; }
+      if ((m = /^\s*[-*•]\s+\[( |x|X)\]\s+(.*)$/.exec(line))) {
+        if (!cur || cur.t !== 'ul') { cur = { t: 'ul', items: [] }; blocks.push(cur); }
+        cur.items.push({ text: m[2], task: m[1] !== ' ' });
+        continue;
+      }
+      if ((m = /^\s*[-*•]\s+(.*)$/.exec(line))) {
+        if (!cur || cur.t !== 'ul') { cur = { t: 'ul', items: [] }; blocks.push(cur); }
+        cur.items.push({ text: m[1], task: null });
+        continue;
+      }
+      if ((m = /^\s*(\d+)[.)]\s+(.*)$/.exec(line))) {
+        if (!cur || cur.t !== 'ol') { cur = { t: 'ol', items: [], start: Number(m[1]) }; blocks.push(cur); }
+        cur.items.push({ text: m[2], task: null });
+        continue;
+      }
+      if (cur && cur.t === 'p') cur.text += '\n' + line;
+      else { cur = { t: 'p', text: line }; blocks.push(cur); }
+    }
+    return blocks;
   }
 
   // ---------- Sortierung ----------
@@ -1197,7 +1333,7 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
     todosOnDate, todosInList, listsOf, plannedForProject, nextOrder, nextOrderInList,
     rollover, orderForIndex, moveTodo, moveToList, reorderLists,
     occursOn, materialize, virtualOn, search,
-    isHeading, headingText, tokenize, parseInput,
+    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime,
   };
 });
 
@@ -1584,7 +1720,11 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
   const curProject = () => projectById(ui.projectId) || state.projects[0];
   // „Geplant“ steht links, sobald das Projekt datierte Aufgaben hat (ab dem zweiten Projekt und auf der Projektseite immer).
   const showPlanned = () => ui.mode === 'max' || state.projects.indexOf(curProject()) > 0 || L.plannedForProject(state, curProject().id).length > 0;
-  const perPage = () => (showPlanned() ? 4 : 5);
+  const mobileMq = window.matchMedia ? window.matchMedia('(max-width: 700px)') : { matches: false };
+  if (mobileMq.addEventListener) mobileMq.addEventListener('change', () => render());
+  const isMobile = () => !!mobileMq.matches;
+  const perPage = () => (isMobile() ? 999 : showPlanned() ? 4 : 5);
+  const MINUTES = { minutes: true, id: 'minutes' }; // Platzhalter-Spalte „Mitschriften“ hinter „Fristen“
 
   let toastTimer = null;
   function toast(message, undoFn) {
@@ -2067,10 +2207,17 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
   // ---------- Band und Listen ----------
   function pageInfo() {
     const lists = L.listsOf(state, curProject().id);
+    const entries = lists.slice();
+    entries.splice(lists.length && lists[0].deadline ? 1 : 0, 0, MINUTES);
     const per = perPage();
-    const pages = Math.max(1, Math.ceil(lists.length / per));
+    const pages = Math.max(1, Math.ceil(entries.length / per));
     ui.page = Math.max(0, Math.min(ui.page, pages - 1));
-    return { lists, per, pages };
+    return { lists, entries, per, pages };
+  }
+  /** Anzahl der Spalten unten (für die Punkte beim Wischen auf dem Handy). */
+  function mobileColCount() {
+    const { entries } = pageInfo();
+    return entries.length + (showPlanned() ? 1 : 0);
   }
 
   function band() {
@@ -2084,8 +2231,15 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
     }
     const { pages } = pageInfo();
     const proj = curProject();
-    const dots = h('div', { class: 'dots' }, Array.from({ length: pages }, (_, i) =>
-      h('button', { type: 'button', class: 'dotbtn' + (i === ui.page ? ' on' : ''), 'aria-label': 'Seite ' + (i + 1), onclick: () => { ui.page = i; render(); } })));
+    if (ui.mproj !== proj.id) { ui.mproj = proj.id; ui.mcol = 0; }
+    const dots = isMobile()
+      ? h('div', { class: 'dots' }, Array.from({ length: mobileColCount() }, (_, i) =>
+        h('button', { type: 'button', class: 'dotbtn' + (i === (ui.mcol || 0) ? ' on' : ''), 'aria-label': 'Spalte ' + (i + 1), onclick: () => {
+          const el = document.querySelector('.lists');
+          if (el) el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' });
+        } })))
+      : h('div', { class: 'dots' }, Array.from({ length: pages }, (_, i) =>
+        h('button', { type: 'button', class: 'dotbtn' + (i === ui.page ? ' on' : ''), 'aria-label': 'Seite ' + (i + 1), onclick: () => { ui.page = i; render(); } })));
     const el = h('div', { class: 'band colored' },
       h('div', { class: 'left' }, ui.mode === 'max' ? null : ibtn(ui.mode === 'closed' ? 'chev-u' : 'chev-d', ui.mode === 'closed' ? 'Listen einblenden' : 'Listen ausblenden', () => {
         ui.mode = ui.mode === 'closed' ? 'open' : 'closed';
@@ -2105,7 +2259,8 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
     const l = { id: L.uid(), projectId: p.id, name: 'Neue Liste', order: lists.length ? lists[lists.length - 1].order + 1 : 1 };
     state.lists.push(l);
     if (ui.mode === 'closed') ui.mode = 'open';
-    ui.page = Math.floor(lists.length / perPage());
+    ui.page = Math.floor((lists.length + 1) / perPage());
+    ui.mcol = 999;
     ui.renamingList = l.id;
     ui.focus = 'rename';
     saveSoon();
@@ -2126,17 +2281,56 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
   function listsArea() {
     if (ui.showDone) return doneArea();
     const p = curProject();
-    const { lists, per, pages } = pageInfo();
+    const { entries, per, pages } = pageInfo();
     const cols = [];
     if (showPlanned()) cols.push(plannedColumn(p));
-    const visible = lists.slice(ui.page * per, ui.page * per + per);
-    visible.forEach((l) => cols.push(listColumn(l)));
-    if (cols.length < 5 && ui.page === pages - 1) {
+    const visible = entries.slice(ui.page * per, ui.page * per + per);
+    visible.forEach((l) => cols.push(l.minutes ? minutesColumn(p) : listColumn(l)));
+    if (!isMobile() && cols.length < 5 && ui.page === pages - 1) {
       cols.push(h('div', { class: 'list-col' },
         h('div', { class: 'list-head new-list' }, h('button', { type: 'button', onclick: addList }, '+ Neue Liste')),
         h('div', { class: 'fill' })));
     }
-    return h('section', { class: 'lists', 'aria-label': 'Listen von ' + p.name }, cols);
+    const section = h('section', { class: 'lists', 'aria-label': 'Listen von ' + p.name }, cols);
+    if (isMobile()) {
+      // Wischen: ein Fenster pro Spalte; Punkte im Band folgen der Position, Position bleibt beim Neuzeichnen erhalten
+      const place = () => { section.scrollLeft = Math.min(ui.mcol || 0, cols.length - 1) * section.clientWidth; };
+      requestAnimationFrame(() => { place(); });
+      let t = null;
+      section.addEventListener('scroll', () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          const i = Math.round(section.scrollLeft / Math.max(1, section.clientWidth));
+          if (i === ui.mcol) return;
+          ui.mcol = i;
+          document.querySelectorAll('.band .dotbtn').forEach((d, k) => d.classList.toggle('on', k === i));
+        }, 60);
+      }, { passive: true });
+    }
+    return section;
+  }
+
+  // ---------- Mitschriften ----------
+  const fmtMin = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const timeSpan = (m) => (m.start && m.end ? m.start + '–' + m.end : m.start ? 'ab ' + m.start : m.end ? 'bis ' + m.end : '');
+  function minutesColumn(p) {
+    const list = L.minutesOf(state, p.id);
+    const items = h('ul', { class: 'items minutes' }, list.map((m) => {
+      const preview = L.parseBlocks(m.body).map((b) => (b.t === 'h' || b.t === 'p' ? b.text : b.t === 'hr' ? '' : b.items.map((x) => x.text).join(' · '))).filter(Boolean).join(' ').replace(/\*+/g, '').slice(0, 140);
+      const li = h('li', { class: 'mcard', tabindex: '0', title: 'Mitschrift öffnen' },
+        h('div', { class: 'mtitle' }, m.title || 'Besprechung'),
+        h('div', { class: 'mmeta' }, fmtMin.format(L.parseISO(m.date)) + (timeSpan(m) ? ' · ' + timeSpan(m) : '')),
+        m.participants ? h('div', { class: 'mpeople' }, '👥 ' + m.participants) : null,
+        preview ? h('div', { class: 'mprev' }, preview) : null);
+      li.addEventListener('click', () => openMinute(m.id));
+      li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMinute(m.id); } });
+      return li;
+    }));
+    return h('section', { class: 'list-col minutes-col' },
+      h('div', { class: 'list-head' }, h('h3', { class: 'minutes-title', title: 'Mitschriften von Besprechungen' }, 'Mitschriften')),
+      h('button', { type: 'button', class: 'newmin', onclick: () => openMinute(null) }, '+ Neue Mitschrift'),
+      list.length ? items : h('p', { class: 'mhint' }, 'Hier stehen Protokolle und Notizen aus Besprechungen mit Datum, Zeit und Teilnehmern.'),
+      h('div', { class: 'fill' }));
   }
 
   function plannedColumn(p) {
@@ -2306,18 +2500,199 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
     if (!p) return;
     if (state.projects.length <= 1) { toast('Das letzte Projekt kann nicht gelöscht werden.'); return; }
     const n = state.todos.filter((t) => t.projectId === id && !t.date).length;
-    if (n && !window.confirm('Projekt „' + p.name + '“ mit ' + n + ' Aufgabe(n) in Listen löschen?')) return;
+    const nm = state.minutes.filter((m) => m.projectId === id).length;
+    if ((n || nm) && !window.confirm('Projekt „' + p.name + '“ mit ' + n + ' Aufgabe(n) in Listen und ' + nm + ' Mitschrift(en) löschen?')) return;
     withUndo('Projekt gelöscht.', () => {
       const listIds = new Set(state.lists.filter((l) => l.projectId === id).map((l) => l.id));
       state.todos = state.todos.filter((t) => !(listIds.has(t.listId) && !t.date));
       for (const t of state.todos) { if (listIds.has(t.listId)) t.listId = null; if (t.projectId === id) t.projectId = null; }
       for (const r of state.recurs) if (r.projectId === id) r.projectId = null;
       state.lists = state.lists.filter((l) => !listIds.has(l.id));
+      state.minutes = state.minutes.filter((m) => m.projectId !== id);
       state.projects = state.projects.filter((x) => x.id !== id);
       ui.projectId = state.projects[0].id;
       ui.page = 0;
     });
   }
+
+  // ---------- Dialog: Mitschrift ----------
+  const minDlg = $('#min-dialog');
+  const minBody = $('#min-body');
+  let minCtx = null;
+  let minDirty = false;
+
+  /** Zeigt formatierten Text (Überschriften, Listen, fett, kursiv, Links) als DOM. */
+  function blocksView(text) {
+    const out = document.createDocumentFragment();
+    const bl = L.parseBlocks(text);
+    if (!bl.length) { out.append(h('p', { class: 'mempty' }, 'Noch kein Text.')); return out; }
+    for (const b of bl) {
+      if (b.t === 'h') out.append(h('h' + (b.level + 2), { class: 'mh' }, rich(b.text)));
+      else if (b.t === 'hr') out.append(h('hr'));
+      else if (b.t === 'p') out.append(h('p', {}, rich(b.text)));
+      else {
+        const lis = b.items.map((it) => h('li', { class: it.task === null ? null : 'task' + (it.task ? ' done' : '') },
+          it.task === null ? null : h('span', { class: 'tbox', 'aria-hidden': 'true' }, it.task ? '☑' : '☐'), rich(it.text)));
+        out.append(h(b.t, { class: b.t === 'ul' && b.items.some((i) => i.task !== null) ? 'tasks' : null, start: b.t === 'ol' && b.start !== 1 ? String(b.start) : null }, lis));
+      }
+    }
+    return out;
+  }
+  function minSetPreview(on) {
+    minBody.hidden = on;
+    $('#min-preview').hidden = !on;
+    $('#min-tools').hidden = on;
+    $('#min-mode-edit').setAttribute('aria-pressed', String(!on));
+    $('#min-mode-view').setAttribute('aria-pressed', String(on));
+    if (on) $('#min-preview').replaceChildren(blocksView(minBody.value));
+  }
+  function openMinute(id) {
+    const m = id ? state.minutes.find((x) => x.id === id) : null;
+    if (id && !m) return;
+    minCtx = { id: id || null, projectId: m ? m.projectId : curProject().id };
+    $('#min-heading').textContent = m ? 'Mitschrift' : 'Neue Mitschrift';
+    const now = new Date();
+    $('#min-title').value = m ? m.title : '';
+    $('#min-date').value = m ? m.date : today;
+    $('#min-start').value = m ? m.start : String(now.getHours()).padStart(2, '0') + ':' + String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0');
+    $('#min-end').value = m ? m.end : '';
+    $('#min-people').value = m ? m.participants : '';
+    minBody.value = m ? m.body : '';
+    $('#min-delete').hidden = !m;
+    minDirty = false;
+    minSetPreview(!!m && !!m.body);
+    minDlg.showModal();
+    if (!m) $('#min-title').focus();
+  }
+  minDlg.addEventListener('input', () => { minDirty = true; });
+  $('#min-mode-edit').addEventListener('click', () => { minSetPreview(false); minBody.focus(); });
+  $('#min-mode-view').addEventListener('click', () => minSetPreview(true));
+  $('#min-preview').addEventListener('dblclick', () => { minSetPreview(false); minBody.focus(); });
+  const minClose = () => { minDlg.close(); minCtx = null; };
+  minDlg.addEventListener('cancel', (e) => {
+    if (minDirty && !window.confirm('Änderungen an der Mitschrift verwerfen?')) e.preventDefault();
+  });
+  minDlg.addEventListener('close', () => { minCtx = null; });
+  $('#min-cancel').addEventListener('click', () => {
+    if (minDirty && !window.confirm('Änderungen an der Mitschrift verwerfen?')) return;
+    minClose();
+  });
+  $('#min-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!minCtx) return;
+    const date = $('#min-date').value;
+    const start = $('#min-start').value;
+    const end = $('#min-end').value;
+    if (!date) { toast('Bitte ein Datum wählen.'); return; }
+    if (start && end && end < start) { toast('Das Ende liegt vor dem Start.'); return; }
+    const data = { title: $('#min-title').value.trim(), date, start, end, participants: $('#min-people').value.trim(), body: minBody.value.replace(/\s+$/, '') };
+    const m = minCtx.id ? state.minutes.find((x) => x.id === minCtx.id) : null;
+    if (m) Object.assign(m, data);
+    else state.minutes.push(Object.assign({ id: L.uid(), projectId: minCtx.projectId }, data));
+    saveSoon();
+    minDirty = false;
+    minClose();
+    render();
+  });
+  $('#min-delete').addEventListener('click', () => {
+    const id = minCtx && minCtx.id;
+    minDirty = false;
+    minClose();
+    if (id) withUndo('Mitschrift gelöscht.', () => { state.minutes = state.minutes.filter((x) => x.id !== id); });
+  });
+  $('#min-copy').addEventListener('click', async () => {
+    const lines = ['# ' + ($('#min-title').value.trim() || 'Besprechung')];
+    const d = $('#min-date').value;
+    const t = timeSpan({ start: $('#min-start').value, end: $('#min-end').value });
+    lines.push('Datum: ' + (d ? fmtMin.format(L.parseISO(d)) : '') + (t ? ', ' + t : ''));
+    if ($('#min-people').value.trim()) lines.push('Teilnehmer: ' + $('#min-people').value.trim());
+    const text = lines.join('\n') + '\n\n' + minBody.value;
+    try { await navigator.clipboard.writeText(text); toast('Mitschrift kopiert.'); } catch (err) { toast('Kopieren war nicht möglich.'); }
+  });
+
+  // Formatierung im Textfeld (Markdown-Auszeichnung)
+  function taEdit(fn) {
+    const r = fn(minBody.value, minBody.selectionStart, minBody.selectionEnd);
+    minBody.value = r.value;
+    minBody.setSelectionRange(r.start, r.end);
+    minBody.focus();
+    minDirty = true;
+  }
+  const LINE_TEST = { h1: /^# /, h2: /^## /, ul: /^[-*•] (?!\[[ xX]\])/, ol: /^\d+[.)] /, task: /^[-*•] \[[ xX]\] / };
+  const LINE_STRIP = /^(#{1,3} |[-*•] \[[ xX]\] |[-*•] |\d+[.)] )/;
+  function prefixLines(kind) {
+    taEdit((v, s, e) => {
+      const a = v.lastIndexOf('\n', s - 1) + 1;
+      const end = e > s && v[e - 1] === '\n' ? e - 1 : e;
+      let b = v.indexOf('\n', end);
+      if (b < 0) b = v.length;
+      const lines = v.slice(a, b).split('\n');
+      const filled = lines.filter((l) => l.trim());
+      const allHave = filled.length > 0 && filled.every((l) => LINE_TEST[kind].test(l));
+      let n = 0;
+      const mark = (k, i) => (k === 'h1' ? '# ' : k === 'h2' ? '## ' : k === 'ul' ? '- ' : k === 'task' ? '- [ ] ' : i + '. ');
+      const out = !filled.length ? [mark(kind, 1)] : lines.map((l) => {
+        if (!l.trim()) return l;
+        const bare = l.replace(LINE_STRIP, '');
+        if (allHave) return bare;
+        n += 1;
+        return mark(kind, n) + bare;
+      });
+      const text = out.join('\n');
+      const caret = filled.length ? null : a + text.length; // leere Zeile: Cursor hinter die Markierung, nichts markieren
+      return { value: v.slice(0, a) + text + v.slice(b), start: caret === null ? a : caret, end: caret === null ? a + text.length : caret };
+    });
+  }
+  function wrapSel(mark) {
+    taEdit((v, s, e) => {
+      const m = mark.length;
+      const sel = v.slice(s, e);
+      if (sel.length >= 2 * m && sel.startsWith(mark) && sel.endsWith(mark) && !(m === 1 && sel.startsWith('**'))) {
+        return { value: v.slice(0, s) + sel.slice(m, -m) + v.slice(e), start: s, end: e - 2 * m };
+      }
+      if (s >= m && v.slice(s - m, s) === mark && v.slice(e, e + m) === mark && !(m === 1 && (v[s - 2] === '*' || v[e + 1] === '*'))) {
+        return { value: v.slice(0, s - m) + sel + v.slice(e + m), start: s - m, end: e - m };
+      }
+      return { value: v.slice(0, s) + mark + sel + mark + v.slice(e), start: s + m, end: e + m };
+    });
+  }
+  function insertLink() {
+    taEdit((v, s, e) => {
+      const sel = v.slice(s, e);
+      if (/^https?:\/\/\S+$/.test(sel)) { const t = '[Link](' + sel + ')'; return { value: v.slice(0, s) + t + v.slice(e), start: s + 1, end: s + 5 }; }
+      const label = sel || 'Text';
+      const t = '[' + label + '](https://)';
+      const urlStart = s + label.length + 3;
+      return { value: v.slice(0, s) + t + v.slice(e), start: urlStart, end: urlStart + 8 };
+    });
+  }
+  $('#min-tools').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-fmt]');
+    if (!b) return;
+    const f = b.dataset.fmt;
+    if (f === 'b') wrapSel('**');
+    else if (f === 'i') wrapSel('*');
+    else if (f === 'link') insertLink();
+    else if (f === 'hr') taEdit((v, s, e2) => { const t = (s > 0 && v[s - 1] !== '\n' ? '\n' : '') + '---\n'; return { value: v.slice(0, e2) + t + v.slice(e2), start: e2 + t.length, end: e2 + t.length }; });
+    else prefixLines(f);
+  });
+  minBody.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey) {
+      if (e.key === 'b' || e.key === 'B') { e.preventDefault(); wrapSel('**'); return; }
+      if (e.key === 'i' || e.key === 'I') { e.preventDefault(); wrapSel('*'); return; }
+    }
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && minBody.selectionStart === minBody.selectionEnd) {
+      const v = minBody.value;
+      const s = minBody.selectionStart;
+      const a = v.lastIndexOf('\n', s - 1) + 1;
+      const m = /^(\s*)([-*•]\s+(?:\[[ xX]\]\s+)?|(\d+)([.)])\s+)(.*)$/.exec(v.slice(a, s));
+      if (!m) return;
+      e.preventDefault();
+      if (!m[5].trim()) { taEdit((val) => ({ value: val.slice(0, a) + val.slice(s), start: a, end: a })); return; }
+      const next = '\n' + m[1] + (m[3] ? (Number(m[3]) + 1) + m[4] + ' ' : m[2].replace(/\[[xX]\]/, '[ ]'));
+      taEdit((val) => ({ value: val.slice(0, s) + next + val.slice(s), start: s + next.length, end: s + next.length }));
+    }
+  });
 
   // ---------- Kontextmenü ----------
   let menuEl = null;
@@ -2640,7 +3015,7 @@ dialog label.check-row input { width: 16px; height: 16px; accent-color: var(--ac
       ui.projectId = l.projectId;
       if (ui.mode === 'closed') ui.mode = 'open';
       const idx = L.listsOf(state, l.projectId).findIndex((x) => x.id === l.id);
-      ui.page = Math.floor(idx / perPage());
+      ui.page = Math.floor((idx > 0 ? idx + 1 : idx) / perPage());
     }
     render();
   }
