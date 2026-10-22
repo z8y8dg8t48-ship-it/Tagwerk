@@ -554,6 +554,10 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
 .cday.sel { background: var(--accent); color: #fff; }
 .calnow { display: block; margin: 8px auto 0; font-size: 12px; color: var(--accent); }
 
+dialog.drawer.left, dialog.drawer.detail.left, dialog.drawer.minute.left { inset: 0 auto 0 0; border-width: 0 1px 0 0; box-shadow: 10px 0 28px rgba(0, 0, 0, 0.16); }
+dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
+@keyframes drawer-in-left { from { transform: translateX(-100%); } to { transform: none; } }
+
 </style>
 </head>
 <body>
@@ -746,6 +750,7 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
         <li>Kürzel beim Tippen: <b>#Projekt</b>, <b>@morgen</b>, <b>@fr</b>, <b>@24.12.</b></li>
         <li><b>← →</b> blättern um einen Tag, <b>Pos1</b> springt zu heute, <b>/</b> öffnet die Suche</li>
       </ul>
+      <p class="hint" id="build-info"></p>
       <div class="dialog-actions"><span class="spacer"></span><button type="submit" class="primary">Schließen</button></div>
     </form>
   </dialog>
@@ -2225,22 +2230,40 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
   }
 
   // ---------- Seitenfenster (von rechts hereingeschoben, Kalender bleibt links bedienbar) ----------
-  /** Speichert bzw. schließt offene Seitenfenster, bevor ein neues Fenster gefüllt wird. */
-  function prepareDrawer() {
-    document.querySelectorAll('dialog.drawer[open]').forEach((o) => {
-      const form = o.querySelector('form');
-      const save = o.id === 'edit-dialog' || (o.id === 'min-dialog' && minDirty);
-      if (save && form.checkValidity()) form.requestSubmit();
-      if (o.open) o.close();
-    });
+  /** Speichert (falls nötig) und schließt ein Seitenfenster. */
+  function saveDrawer(o) {
+    if (!o.open) return;
+    const form = o.querySelector('form');
+    const save = o.id === 'edit-dialog' || o.id === 'project-dialog' || (o._isDirty && o._isDirty());
+    if (save && form.checkValidity()) form.requestSubmit();
+    if (o.open) o.close();
   }
-  function openDrawer(dlg) {
+  const openDrawers = () => [...document.querySelectorAll('dialog.drawer[open]')];
+  /**
+   * Bestimmt die Seite für ein Seitenfenster: rechts, solange dort nichts anderes offen ist, sonst links.
+   * Das Fenster selbst (neu befüllt) wird vorher gespeichert; exclusive schließt alle anderen.
+   * Muss vor dem Umsetzen des Kontexts (editCtx usw.) aufgerufen werden.
+   */
+  function placeDrawer(dlg, exclusive) {
+    saveDrawer(dlg);
+    if (exclusive) { openDrawers().forEach(saveDrawer); return 'right'; }
+    const others = openDrawers().filter((o) => o !== dlg);
+    const rightTaken = others.some((o) => !o.classList.contains('left'));
+    const side = rightTaken ? 'left' : 'right';
+    if (side === 'left') others.filter((o) => o.classList.contains('left')).forEach(saveDrawer);
+    return side;
+  }
+  let drawerFresh = false;
+  function openDrawer(dlg, side) {
     dlg.classList.remove('slide-in');
+    dlg.classList.toggle('left', side === 'left');
     dlg.show();
     void dlg.offsetWidth;
     dlg.classList.add('slide-in');
+    drawerFresh = true;
+    setTimeout(() => { drawerFresh = false; }, 0);
   }
-  document.querySelectorAll('dialog.drawer').forEach((dlg) => {
+  function wireDrawer(dlg) {
     dlg.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       e.preventDefault();
@@ -2248,7 +2271,20 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
       dlg.dispatchEvent(ev);
       if (!ev.defaultPrevented) dlg.close();
     });
+  }
+  document.querySelectorAll('dialog.drawer').forEach(wireDrawer);
+  // Klick in den Hintergrund schließt die Seitenfenster und speichert (Kästchen, Eingabefelder, Menüs bleiben ausgenommen)
+  let downInDialog = false;
+  document.addEventListener('mousedown', (e) => { downInDialog = !!e.target.closest('dialog'); }, true);
+  document.addEventListener('click', (e) => {
+    if (drawerFresh || downInDialog || !openDrawers().length) return;
+    if (!e.target.isConnected) return;
+    if (e.target.closest('dialog, .menu, .calpop, .toast, input, textarea, select, .check')) return;
+    openDrawers().forEach(saveDrawer);
   });
+
+  const BUILD = '2026-10-22 · interne Projekte, Papierkorb, Seitenfenster';
+  $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Datum abfragen ----------
   const dateDlg = $('#date-dialog');
@@ -3236,8 +3272,9 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
   }
 
   // ---------- Dialog: Mitschrift ----------
-  const minDlg = $('#min-dialog');
-  const minBody = $('#min-body');
+  function setupMinute(minDlg) {
+  const q = (sel) => minDlg.querySelector(sel);
+  const minBody = q('#min-body');
   let minCtx = null;
   let minDirty = false;
 
@@ -3260,20 +3297,20 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
   }
   function minSetPreview(on) {
     minBody.hidden = on;
-    $('#min-preview').hidden = !on;
-    $('#min-tools').hidden = on;
-    $('#min-mode-edit').setAttribute('aria-pressed', String(!on));
-    $('#min-mode-view').setAttribute('aria-pressed', String(on));
+    q('#min-preview').hidden = !on;
+    q('#min-tools').hidden = on;
+    q('#min-mode-edit').setAttribute('aria-pressed', String(!on));
+    q('#min-mode-view').setAttribute('aria-pressed', String(on));
     if (on) {
       const people = readPeople();
       const tbl = people.length
         ? h('table', { class: 'ptable' }, h('thead', {}, h('tr', {}, h('th', {}, 'Name'), h('th', {}, 'Firma / Gemeinde / Behörde'))),
           h('tbody', {}, people.map((x) => h('tr', {}, h('td', {}, x.name), h('td', {}, x.org)))))
         : null;
-      $('#min-preview').replaceChildren(...[tbl, blocksView(minBody.value)].filter(Boolean));
+      q('#min-preview').replaceChildren(...[tbl, blocksView(minBody.value)].filter(Boolean));
     }
   }
-  const peopleBox = $('#min-people');
+  const peopleBox = q('#min-people');
   function personRow(x) {
     const name = h('input', { type: 'text', class: 'pname', maxlength: '120', placeholder: 'Name', 'aria-label': 'Name', autocomplete: 'off', list: 'name-list' });
     const org = h('input', { type: 'text', class: 'porg', maxlength: '160', placeholder: 'Firma / Gemeinde / Behörde', 'aria-label': 'Firma, Gemeinde oder Behörde', autocomplete: 'off', list: 'org-list' });
@@ -3308,49 +3345,48 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
     peopleBox.replaceChildren(...(list.length ? list : [null]).map(personRow));
   }
   const readPeople = () => L.cleanPeople([...peopleBox.children].map((r) => ({ name: r.querySelector('.pname').value, org: r.querySelector('.porg').value })));
-  $('#min-people-add').addEventListener('click', () => addPerson(true));
+  q('#min-people-add').addEventListener('click', () => addPerson(true));
 
-  function openMinute(id) {
-    prepareDrawer();
+  function openMinuteIn(id, side) {
     const m = id ? state.minutes.find((x) => x.id === id) : null;
     if (id && !m) return;
     minCtx = { id: id || null, projectId: m ? m.projectId : curProject().id };
-    $('#min-heading').textContent = m ? 'Mitschrift' : 'Neue Mitschrift';
+    q('#min-heading').textContent = m ? 'Mitschrift' : 'Neue Mitschrift';
     const now = new Date();
-    $('#min-title').value = m ? m.title : '';
-    $('#min-date').value = m ? m.date : today;
-    $('#min-start').value = m ? m.start : String(now.getHours()).padStart(2, '0') + ':' + String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0');
-    $('#min-end').value = m ? m.end : '';
+    q('#min-title').value = m ? m.title : '';
+    q('#min-date').value = m ? m.date : today;
+    q('#min-start').value = m ? m.start : String(now.getHours()).padStart(2, '0') + ':' + String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0');
+    q('#min-end').value = m ? m.end : '';
     fillPeople(m ? m.participants : []);
     minBody.value = m ? m.body : '';
-    $('#min-delete').hidden = !m;
+    q('#min-delete').hidden = !m;
     minDirty = false;
     minSetPreview(!!m && !!m.body);
-    openDrawer(minDlg);
-    if (!m) $('#min-title').focus();
+    openDrawer(minDlg, side);
+    if (!m) q('#min-title').focus();
   }
   minDlg.addEventListener('input', () => { minDirty = true; });
-  $('#min-mode-edit').addEventListener('click', () => { minSetPreview(false); minBody.focus(); });
-  $('#min-mode-view').addEventListener('click', () => minSetPreview(true));
-  $('#min-preview').addEventListener('dblclick', () => { minSetPreview(false); minBody.focus(); });
+  q('#min-mode-edit').addEventListener('click', () => { minSetPreview(false); minBody.focus(); });
+  q('#min-mode-view').addEventListener('click', () => minSetPreview(true));
+  q('#min-preview').addEventListener('dblclick', () => { minSetPreview(false); minBody.focus(); });
   const minClose = () => { minDlg.close(); minCtx = null; };
   minDlg.addEventListener('cancel', (e) => {
     if (minDirty && !window.confirm('Änderungen an der Mitschrift verwerfen?')) e.preventDefault();
   });
-  minDlg.addEventListener('close', () => { minCtx = null; });
-  $('#min-cancel').addEventListener('click', () => {
+  minDlg.addEventListener('close', () => { if (!minDlg.open) minCtx = null; });
+  q('#min-cancel').addEventListener('click', () => {
     if (minDirty && !window.confirm('Änderungen an der Mitschrift verwerfen?')) return;
     minClose();
   });
-  $('#min-form').addEventListener('submit', (e) => {
+  q('#min-form').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!minCtx) return;
-    const date = $('#min-date').value;
-    const start = $('#min-start').value;
-    const end = $('#min-end').value;
+    const date = q('#min-date').value;
+    const start = q('#min-start').value;
+    const end = q('#min-end').value;
     if (!date) { toast('Bitte ein Datum wählen.'); return; }
     if (start && end && end < start) { toast('Das Ende liegt vor dem Start.'); return; }
-    const data = { title: $('#min-title').value.trim(), date, start, end, participants: readPeople(), body: minBody.value.replace(/\s+$/, '') };
+    const data = { title: q('#min-title').value.trim(), date, start, end, participants: readPeople(), body: minBody.value.replace(/\s+$/, '') };
     const m = minCtx.id ? state.minutes.find((x) => x.id === minCtx.id) : null;
     if (m) Object.assign(m, data);
     else state.minutes.push(Object.assign({ id: L.uid(), projectId: minCtx.projectId }, data));
@@ -3359,16 +3395,16 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
     minClose();
     render();
   });
-  $('#min-delete').addEventListener('click', () => {
+  q('#min-delete').addEventListener('click', () => {
     const id = minCtx && minCtx.id;
     minDirty = false;
     minClose();
     if (id) withUndo('Mitschrift gelöscht.', () => { state.minutes = state.minutes.filter((x) => x.id !== id); });
   });
-  $('#min-copy').addEventListener('click', async () => {
-    const lines = ['# ' + ($('#min-title').value.trim() || 'Besprechung')];
-    const d = $('#min-date').value;
-    const t = timeSpan({ start: $('#min-start').value, end: $('#min-end').value });
+  q('#min-copy').addEventListener('click', async () => {
+    const lines = ['# ' + (q('#min-title').value.trim() || 'Besprechung')];
+    const d = q('#min-date').value;
+    const t = timeSpan({ start: q('#min-start').value, end: q('#min-end').value });
     lines.push('Datum: ' + (d ? fmtMin.format(L.parseISO(d)) : '') + (t ? ', ' + t : ''));
     const people = readPeople();
     if (people.length) lines.push('Teilnehmer:', ...people.map((x) => '- ' + personText(x)));
@@ -3376,15 +3412,15 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
     try { await navigator.clipboard.writeText(text); toast('Mitschrift kopiert.'); } catch (err) { toast('Kopieren war nicht möglich.'); }
   });
 
-  $('#min-word').addEventListener('click', () => {
+  q('#min-word').addEventListener('click', () => {
     if (!window.Docx) { toast('Der Word-Export ist hier nicht verfügbar.'); return; }
-    const date = $('#min-date').value;
-    const title = $('#min-title').value.trim() || 'Besprechung';
+    const date = q('#min-date').value;
+    const title = q('#min-title').value.trim() || 'Besprechung';
     const bytes = window.Docx.build({
       title,
       project: (projectById(minCtx ? minCtx.projectId : curProject().id) || curProject()).name,
       dateText: date ? new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(L.parseISO(date)) : '',
-      timeText: timeSpan({ start: $('#min-start').value, end: $('#min-end').value }) ? timeSpan({ start: $('#min-start').value, end: $('#min-end').value }) + ' Uhr' : '',
+      timeText: timeSpan({ start: q('#min-start').value, end: q('#min-end').value }) ? timeSpan({ start: q('#min-start').value, end: q('#min-end').value }) + ' Uhr' : '',
       participants: readPeople(),
       body: minBody.value,
     });
@@ -3454,7 +3490,7 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
       return { value: v.slice(0, s) + t + v.slice(e), start: urlStart, end: urlStart + 8 };
     });
   }
-  $('#min-tools').addEventListener('click', (e) => {
+  q('#min-tools').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-fmt]');
     if (!b) return;
     const f = b.dataset.fmt;
@@ -3481,6 +3517,22 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
       taEdit((val) => ({ value: val.slice(0, s) + next + val.slice(s), start: s + next.length, end: s + next.length }));
     }
   });
+  minDlg._isDirty = () => minDirty;
+  return { open: openMinuteIn, dlg: minDlg };
+  }
+  const minA = setupMinute($('#min-dialog'));
+  const minDlg2 = $('#min-dialog').cloneNode(true);
+  minDlg2.id = 'min-dialog-2';
+  document.body.append(minDlg2);
+  const minB = setupMinute(minDlg2);
+  wireDrawer(minDlg2);
+  function openMinute(id) {
+    const m = id ? state.minutes.find((x) => x.id === id) : null;
+    if (id && !m) return;
+    const inst = minA.dlg.open ? minB : minA;
+    const side = placeDrawer(inst.dlg);
+    inst.open(id, side);
+  }
 
   // ---------- Kontextmenü ----------
   let menuEl = null;
@@ -3601,9 +3653,9 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
     if (e.target.value) o.notes = e.target.value; else delete o.notes;
     saveSoon();
   });
-  editDlg.addEventListener('close', () => { editCtx = null; render(); });
+  editDlg.addEventListener('close', () => { if (editDlg.open) return; editCtx = null; render(); });
 
-  function fillEdit(text, date, listId, rule, ruleOnly) {
+  function fillEdit(text, date, listId, rule, ruleOnly, side) {
     $('#edit-title').textContent = ruleOnly ? 'Wiederkehrende Aufgabe' : 'Aufgabe';
     const o = editTarget();
     $('#edit-notes').value = (o && o.notes) || '';
@@ -3621,22 +3673,22 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
     $('#edit-freq').value = rule ? rule.freq : '';
     $('#edit-interval').value = rule ? rule.interval : 1;
     syncInterval();
-    openDrawer(editDlg);
+    openDrawer(editDlg, side);
     $('#edit-text').select();
   }
   function openEdit(id) {
-    prepareDrawer();
     const t = state.todos.find((x) => x.id === id);
     if (!t) return;
+    const side = placeDrawer(editDlg);
     editCtx = { kind: 'todo', id };
-    fillEdit(t.text, t.date, t.listId, t.recurId ? state.recurs.find((r) => r.id === t.recurId) : null, false);
+    fillEdit(t.text, t.date, t.listId, t.recurId ? state.recurs.find((r) => r.id === t.recurId) : null, false, side);
   }
   function openRule(id) {
-    prepareDrawer();
     const r = state.recurs.find((x) => x.id === id);
     if (!r) return;
+    const side = placeDrawer(editDlg);
     editCtx = { kind: 'rule', id };
-    fillEdit(r.text, null, null, r, true);
+    fillEdit(r.text, null, null, r, true, side);
   }
   $('#edit-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -3703,7 +3755,7 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
   }
   function drawProjectSwatches() { swatches($('#project-colors'), PROJECT_COLORS, pickedColor, (c) => { pickedColor = c; drawProjectSwatches(); }); }
   function openProjectDialog(id) {
-    prepareDrawer();
+    placeDrawer(projDlg, true);
     projectEditId = id || null;
     const p = id ? projectById(id) : null;
     $('#project-dialog-title').textContent = p ? 'Projekt bearbeiten' : 'Neues Projekt';
@@ -3714,7 +3766,7 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
     $('#project-name').setCustomValidity('');
     pickedColor = p ? p.color : PROJECT_COLORS[state.projects.length % PROJECT_COLORS.length];
     drawProjectSwatches();
-    openDrawer(projDlg);
+    openDrawer(projDlg, 'right');
     $('#project-name').focus();
   }
   let codeTouched = false;
@@ -3757,10 +3809,10 @@ dialog.drawer.slide-in { animation: drawer-in 0.22s ease-out; }
 
   // ---------- Dialog: Einstellungen ----------
   function openPrefs() {
-    prepareDrawer();
+    placeDrawer($('#prefs-dialog'), true);
     $('#pref-mode').value = state.settings.mode;
     drawAccentSwatches();
-    openDrawer($('#prefs-dialog'));
+    openDrawer($('#prefs-dialog'), 'right');
   }
   function drawAccentSwatches() {
     swatches($('#accent-colors'), ACCENTS.map((a) => a[1]), state.settings.accent, (c) => {
