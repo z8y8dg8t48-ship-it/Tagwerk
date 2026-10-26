@@ -558,6 +558,23 @@ dialog.drawer.left, dialog.drawer.detail.left, dialog.drawer.minute.left { inset
 dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
 @keyframes drawer-in-left { from { transform: translateX(-100%); } to { transform: none; } }
 
+/* Aufgabe: Priorität / Frist, Projektabfrage */
+.checks { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 4px; }
+.checks label.check-row { margin-bottom: 8px; }
+#edit-where { margin: -2px 0 12px; }
+.picklist { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow: auto; }
+.pickbtn { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; border: 1px solid var(--line); background: none; border-radius: 6px; padding: 9px 12px; font-size: 14px; color: var(--text); }
+.pickbtn:hover, .pickbtn:focus-visible { background: var(--band); outline: none; }
+
+/* Mobil: Projekt-Reiter in einer einzigen, seitlich wischbaren Zeile */
+@media (max-width: 700px) {
+  .tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding-left: 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .ptabs { flex-wrap: nowrap; flex: none; }
+  .ptab { flex: none; white-space: nowrap; padding: 0 9px; }
+  .tabs .tail { flex: none; padding: 0 6px 0 4px; }
+}
+
 </style>
 </head>
 <body>
@@ -572,9 +589,13 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       <label>Text<input id="edit-text" type="text" required maxlength="500" autocomplete="off"></label>
       <div class="row2">
         <label id="edit-date-wrap">Datum<input id="edit-date" type="date"></label>
-        <label id="edit-list-wrap">Liste<select id="edit-list"></select></label>
+        <label id="edit-list-wrap">Projekt<select id="edit-project"></select></label>
       </div>
-      <label class="check-row"><input id="edit-prio" type="checkbox"> Hohe Priorität – steht am Tag ganz oben</label>
+      <div class="checks" id="edit-checks">
+        <label class="check-row"><input id="edit-prio" type="checkbox"> Hohe Priorität</label>
+        <label class="check-row" id="edit-frist-wrap"><input id="edit-frist" type="checkbox"> Frist</label>
+      </div>
+      <p class="hint" id="edit-where"></p>
       <label>Notizen
         <textarea id="edit-notes" rows="4" maxlength="20000" placeholder="Notizen, Details, Links …"></textarea>
       </label>
@@ -688,6 +709,15 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     </form>
   </dialog>
 
+  <dialog id="pick-dialog" class="small">
+    <form method="dialog" id="pick-form">
+      <h2>Zu welchem Projekt?</h2>
+      <p class="hint" id="pick-task"></p>
+      <div id="pick-list" class="picklist"></div>
+      <div class="dialog-actions"><button type="button" id="pick-none">Kein Projekt</button><span class="spacer"></span></div>
+    </form>
+  </dialog>
+
   <dialog id="prefs-dialog" class="drawer">
     <form method="dialog" id="prefs-form">
       <h2>Einstellungen</h2>
@@ -747,7 +777,9 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
         <li>Aufgaben per <b>Ziehen</b> zwischen Tagen, Listen und auf Projekt-Tabs verschieben</li>
         <li><b>#&nbsp;Überschrift</b> am Zeilenanfang erzeugt eine graue Zwischenüberschrift</li>
         <li><b>!&nbsp;Text</b> (Ausrufezeichen am Anfang) setzt hohe Priorität; in der Spalte <b>Fristen</b> jedes Projekts stehen rote Fristen mit <b>@Datum</b></li>
+        <li>Aufgaben im Kalender ohne <b>#Projekt</b> fragen nach dem Projekt. In den Details bestimmt das Projekt zusammen mit Datum und <b>Frist</b>-Kästchen den Ort: ohne Datum „Aufgaben“, mit Datum „Geplant“, mit Frist „Fristen“</li>
         <li>Kürzel beim Tippen: <b>#Projekt</b>, <b>@morgen</b>, <b>@fr</b>, <b>@24.12.</b></li>
+        <li>Offene Aufgaben vergangener Tage rutschen jeden Tag auf heute – auch am Wochenende (Sa → So → Mo); in der 5-Tage-Ansicht erscheinen sie am Montag wieder</li>
         <li><b>← →</b> blättern um einen Tag, <b>Pos1</b> springt zu heute, <b>/</b> öffnet die Suche</li>
       </ul>
       <p class="hint" id="build-info"></p>
@@ -931,6 +963,25 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     return true;
   }
 
+  /**
+   * Übernimmt Felder, die diese Programmversion nicht kennt (von neueren Versionen), unverändert.
+   * Sonst gingen sie beim Laden verloren und der Abgleich würde sie auf allen Geräten löschen.
+   */
+  const KNOWN = {
+    project: ['id', 'name', 'code', 'color', 'updatedAt', 'order', 'internal', 'trashed', 'trashedAt', 'archived', 'archivedAt', 'status', 'statusLevel', 'statusAt'],
+    list: ['id', 'projectId', 'name', 'order', 'deadline', 'updatedAt'],
+    todo: ['id', 'text', 'date', 'listId', 'projectId', 'done', 'order', 'origDate', 'doneAt', 'recurId', 'prio', 'updatedAt', 'notes', 'subtasks'],
+    recur: ['id', 'text', 'projectId', 'freq', 'interval', 'start', 'through', 'until', 'prio', 'updatedAt', 'notes', 'subtasks'],
+    minute: ['id', 'projectId', 'title', 'date', 'start', 'end', 'participants', 'body', 'updatedAt'],
+  };
+  function carryExtra(src, dst, known) {
+    for (const k of Object.keys(src)) {
+      if (known.includes(k) || k.startsWith('_')) continue;
+      const v = src[k];
+      if (v !== undefined && typeof v !== 'function') dst[k] = v;
+    }
+  }
+
   /** Macht aus beliebigem geladenem JSON einen gültigen Zustand (inkl. Umzug von Version 1). */
   function normalize(raw) {
     const s = emptyState();
@@ -955,6 +1006,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
           if (typeof p.status === 'string' && p.status.trim()) proj.status = p.status.trim().slice(0, 600);
           if (['ok', 'warn', 'bad'].includes(p.statusLevel)) proj.statusLevel = p.statusLevel;
           if (typeof p.statusAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.statusAt)) proj.statusAt = p.statusAt;
+          carryExtra(p, proj, KNOWN.project);
           s.projects.push(proj);
         }
       }
@@ -967,6 +1019,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
           const list = { id: l.id, projectId: l.projectId, name: l.name, order: Number.isFinite(l.order) ? l.order : s.lists.length + 1 };
           if (l.deadline) list.deadline = true;
           if (Number.isFinite(l.updatedAt)) list.updatedAt = l.updatedAt;
+          carryExtra(l, list, KNOWN.list);
           s.lists.push(list);
         }
       }
@@ -1008,6 +1061,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
         if (notes) todo.notes = notes;
         const subs = cleanSubs(t.subtasks);
         if (subs.length) todo.subtasks = subs;
+        carryExtra(t, todo, KNOWN.todo);
         s.todos.push(todo);
       }
     }
@@ -1027,6 +1081,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
         if (rnotes) rule.notes = rnotes;
         const rsubs = cleanSubs(r.subtasks);
         if (rsubs.length) rule.subtasks = rsubs;
+        carryExtra(r, rule, KNOWN.recur);
         s.recurs.push(rule);
       }
     }
@@ -1042,6 +1097,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
           body: typeof m.body === 'string' ? m.body.slice(0, 200000) : '',
         };
         if (Number.isFinite(m.updatedAt)) min.updatedAt = m.updatedAt;
+        carryExtra(m, min, KNOWN.minute);
         s.minutes.push(min);
       }
     }
@@ -1061,6 +1117,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   }
 
   // ---------- Abgleich zwischen Geräten ----------
+  const APP = 20261026; // Stand des Programms; wandert in die Abgleich-Datei, damit veraltete Geräte sich erneuern
   const COLS = ['projects', 'lists', 'todos', 'recurs', 'minutes'];
   const TOMBSTONE_DAYS = 90;
   function stable(v) {
@@ -1173,7 +1230,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   }
   /** Der Inhalt, der in die Datei im Netz geschrieben wird (ohne lokalen Sync-Stand und ohne gerätespezifische Einstellungen). */
   function uploadText(state) {
-    const o = { version: 2, projects: state.projects, lists: state.lists, todos: state.todos, recurs: state.recurs, minutes: state.minutes, deleted: state.deleted };
+    const o = { version: 2, app: APP, projects: state.projects, lists: state.lists, todos: state.todos, recurs: state.recurs, minutes: state.minutes, deleted: state.deleted };
     return JSON.stringify(o);
   }
 
@@ -1311,19 +1368,25 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
    * (Wiederholungen würden sich sonst Tag für Tag stapeln).
    */
   function rollover(state, today) {
+    // Jeden Tag – auch Samstag und Sonntag – rutschen offene Aufgaben auf heute: nichts bleibt zurück (Sa → So → Mo).
+    const target = today;
     const arch = archivedIds(state);
     const late = state.todos
       .filter((t) => !t.done && !t.recurId && t.date && t.date < today && !isDeadline(state, t) && !arch.has(t.projectId))
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.order - b.order));
     if (!late.length) return 0;
-    const existing = state.todos.filter((t) => t.date === today && !late.includes(t));
+    const existing = state.todos.filter((t) => t.date === target && !late.includes(t));
     let top = existing.length ? Math.min(...existing.map((t) => t.order)) : 1;
     for (let i = late.length - 1; i >= 0; i--) {
       const t = late[i];
       if (!t.origDate) t.origDate = t.date;
-      t.date = today;
+      t.date = target;
       top -= 1;
       t.order = top;
+      // Der Übertrag ist kein Bearbeiten: Merkzettel mitführen, damit `touch` keinen neuen
+      // Zeitstempel vergibt. Sonst gewinnt ein tagelang offenes Gerät beim Abgleich gegen
+      // ein „Erledigt“ von einem anderen Gerät – erledigte Aufgaben tauchten wieder auf.
+      if (state.sync && state.sync.hashes && t.id in state.sync.hashes) state.sync.hashes[t.id] = hashItem(t);
     }
     return late.length;
   }
@@ -1576,7 +1639,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     todosOnDate, todosInList, listsOf, plannedForProject, nextOrder, nextOrderInList,
     rollover, orderForIndex, moveTodo, moveToList, reorderLists,
     occursOn, materialize, virtualOn, search,
-    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople, archivedIds, internalIds, searchArchive, isoWeek, reorderProjects, renumberProjects,
+    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople, archivedIds, internalIds, searchArchive, APP, isoWeek, reorderProjects, renumberProjects,
   };
 });
 
@@ -1781,11 +1844,12 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   let running = false;
   let again = false;
   let timer = null;
+  let newerApp = false;
   let interval = null;
   let statusEl = null;
 
   const redirectUri = () => location.origin + location.pathname;
-  const connected = () => !!(cfg.refresh || cfg.access);
+  const connected = () => !!(cfg.refresh || cfg.access || cfg.expired);
   const configured = () => !!(cfg.clientId && cfg.tenant);
   const fmtTime = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
 
@@ -1814,17 +1878,19 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const rand = () => b64url(crypto.getRandomValues(new Uint8Array(32)));
 
-  async function login() {
+  async function login(silent) {
     if (!hosted) return;
+    if (silent !== true) { delete cfg.silentFailed; saveCfg(); }
     if (!configured()) { setStatus('error', 'Client-ID und Verzeichnis-ID fehlen'); return; }
     const verifier = rand();
     const state = rand();
     const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
-    sessionStorage.setItem(PKCE_KEY, JSON.stringify({ verifier, state }));
+    sessionStorage.setItem(PKCE_KEY, JSON.stringify({ verifier, state, silent: silent === true }));
     const q = new URLSearchParams({
       client_id: cfg.clientId, response_type: 'code', redirect_uri: redirectUri(), response_mode: 'query',
-      scope: SCOPES, state, code_challenge: challenge, code_challenge_method: 'S256', prompt: 'select_account',
+      scope: SCOPES, state, code_challenge: challenge, code_challenge_method: 'S256', prompt: silent === true ? 'none' : 'select_account',
     });
+    if (silent === true && cfg.account) q.set('login_hint', cfg.account);
     location.assign(LOGIN + '/' + encodeURIComponent(cfg.tenant) + '/oauth2/v2.0/authorize?' + q);
   }
 
@@ -1834,11 +1900,18 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       body: new URLSearchParams(Object.assign({ client_id: cfg.clientId, scope: SCOPES }, params)),
     });
     const data = await res.json().catch(() => ({}));
+    if (params.grant_type === 'authorization_code') { cfg.authAt = Date.now(); delete cfg.silentFailed; }
     if (!res.ok || !data.access_token) {
       const err = new Error(data.error_description ? data.error_description.split('\r')[0] : 'Anmeldung fehlgeschlagen (' + res.status + ')');
       err.auth = true;
+      if (params.grant_type === 'refresh_token') {
+        // Refresh-Tokens von Web-Apps (SPA) laufen bei Microsoft nach 24 Stunden ab: neu anmelden
+        cfg.expired = true; delete cfg.refresh; delete cfg.access; delete cfg.exp; saveCfg();
+        err.message = 'Anmeldung abgelaufen – tippen zum Erneuern';
+      }
       throw err;
     }
+    delete cfg.expired;
     cfg.access = data.access_token;
     cfg.exp = Date.now() + (data.expires_in || 3600) * 1000;
     if (data.refresh_token) cfg.refresh = data.refresh_token;
@@ -1857,7 +1930,12 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     history.replaceState(null, '', location.pathname);
     if (!saved || saved.state !== q.get('state')) return false;
     sessionStorage.removeItem(PKCE_KEY);
-    if (q.has('error')) { setStatus('error', q.get('error_description') || q.get('error')); return true; }
+    if (q.has('error')) {
+      if (saved.silent) { cfg.silentFailed = true; delete cfg.access; delete cfg.exp; saveCfg(); }
+      const quiet = saved.silent && /login_required|interaction_required|consent_required|account_selection_required/.test(q.get('error'));
+      setStatus('error', quiet ? 'Anmeldung abgelaufen – tippen zum Erneuern' : (q.get('error_description') || q.get('error')).split('\r')[0]);
+      return true;
+    }
     try {
       await tokenRequest({ grant_type: 'authorization_code', code: q.get('code'), redirect_uri: redirectUri(), code_verifier: saved.verifier });
       return true;
@@ -1866,7 +1944,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
 
   async function accessToken() {
     if (cfg.access && cfg.exp && cfg.exp - 60000 > Date.now()) return cfg.access;
-    if (!cfg.refresh) { const e = new Error('Bitte erneut anmelden'); e.auth = true; throw e; }
+    if (!cfg.refresh) { const e = new Error('Anmeldung abgelaufen – tippen zum Erneuern'); e.auth = true; throw e; }
     await tokenRequest({ grant_type: 'refresh_token', refresh_token: cfg.refresh });
     return cfg.access;
   }
@@ -1916,7 +1994,9 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
         let remoteFp = null;
         if (meta) {
           if (meta.eTag !== st.sync.etag) {
-            const remote = L.normalize(JSON.parse(await getContent()));
+            const rawRemote = JSON.parse(await getContent());
+            if (Number.isFinite(rawRemote.app) && rawRemote.app > L.APP) newerApp = true;
+            const remote = L.normalize(rawRemote);
             remoteFp = L.fingerprint(remote);
             if (!st.sync.etag && L.isPristine(st)) {
               next = remote; // frisch installiert: Stand der Gegenseite übernehmen
@@ -1947,14 +2027,35 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       if (merged !== window.TagwerkApp.getState()) window.TagwerkApp.setState(merged);
       else window.TagwerkApp.save();
       setStatus('ok', fmtTime.format(new Date()));
+      // Dieses Gerät läuft mit veraltetem Programmcode (Tab/App seit Tagen offen): im Hintergrund neu laden
+      if (newerApp && document.hidden && !document.querySelector('dialog[open]')) { newerApp = false; location.reload(); }
     } catch (e) {
-      if (e.auth) { setStatus('error', e.message); }
+      if (e.auth) { setStatus('error', e.message); trySilent(); }
       else if (!navigator.onLine || e instanceof TypeError) setStatus('offline', 'offline');
       else setStatus('error', e.message);
     } finally {
       running = false;
       if (again) { again = false; schedule(2000); }
     }
+  }
+
+  /** Erneuert eine abgelaufene Anmeldung ohne Eingabe (prompt=none), höchstens alle 10 Minuten und nur, wenn gerade nichts bearbeitet wird. */
+  function trySilent(force) {
+    if (!hosted || !configured() || cfg.silentFailed || (cfg.refresh && !force)) return;
+    const last = Number(sessionStorage.getItem('tagwerk-silent')) || 0;
+    if (Date.now() - last < 10 * 60 * 1000) return;
+    const a = document.activeElement;
+    if (document.querySelector('dialog[open]') || (a && /^(input|textarea|select)$/i.test(a.tagName))) return;
+    sessionStorage.setItem('tagwerk-silent', String(Date.now()));
+    try { window.TagwerkApp.save(); } catch (e) { /* weiter */ }
+    login(true);
+  }
+
+  /** Microsoft beendet Anmeldungen von Web-Apps fest nach 24 h: kurz vorher in einem ruhigen Moment still erneuern. */
+  function maybeRenew() {
+    if (!hosted || !configured() || !connected() || cfg.expired) return;
+    if (!cfg.authAt) { cfg.authAt = Date.now(); saveCfg(); return; }
+    if (Date.now() - cfg.authAt > 22.5 * 3600 * 1000) trySilent(true);
   }
 
   function schedule(ms) {
@@ -1969,7 +2070,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   }
 
   function disconnect() {
-    delete cfg.access; delete cfg.refresh; delete cfg.exp; delete cfg.account;
+    delete cfg.access; delete cfg.refresh; delete cfg.exp; delete cfg.account; delete cfg.expired; delete cfg.authAt; delete cfg.silentFailed;
     saveCfg();
     const st = window.TagwerkApp && window.TagwerkApp.getState();
     if (st) { st.sync.etag = null; st.sync.fp = null; st.sync.last = null; window.TagwerkApp.save(); }
@@ -2014,8 +2115,9 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     const back = await handleRedirect();
     if (!configured() || !connected()) { setStatus('off'); return; }
     syncNow();
-    interval = setInterval(() => { if (!document.hidden) syncNow(); }, 60000);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) syncNow(); });
+    maybeRenew();
+    interval = setInterval(() => { if (!document.hidden) { maybeRenew(); syncNow(); } }, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { maybeRenew(); syncNow(); } });
     window.addEventListener('online', () => syncNow());
     if (back) window.TagwerkApp.toast('Mit OneDrive verbunden.');
   }
@@ -2226,6 +2328,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     state.todos.push(todo);
     saveSoon();
     if (ask && !L.isHeading(todo.text)) setTimeout(() => askDate(todo.id, !!(list && list.deadline)), 0);
+    else if (!list && parsed.projectId === undefined && !L.isHeading(todo.text) && activeProjects().length && !window.__tagwerkNoPick) setTimeout(() => askProject(todo.id), 0);
     return true;
   }
 
@@ -2283,8 +2386,36 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-10-22 · interne Projekte, Papierkorb, Seitenfenster';
+  const BUILD = '2026-10-26 · Projektabfrage, Frist-Kästchen, schmale Reiter am Handy';
   $('#build-info').textContent = 'Stand: ' + BUILD;
+
+  // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
+  const pickDlg = $('#pick-dialog');
+  let pickCtx = null;
+  function askProject(id) {
+    const t = state.todos.find((x) => x.id === id);
+    if (!t || pickDlg.open || dateDlg.open) return;
+    pickCtx = id;
+    $('#pick-task').textContent = t.text;
+    $('#pick-list').replaceChildren(...activeProjects().map((p) => {
+      const b = h('button', { type: 'button', class: 'pickbtn', onclick: () => choose(p.id) }, p.name, ' ', badge(p));
+      return b;
+    }));
+    pickDlg.showModal();
+    // Fokus auf die Überschrift: weitertippende Zeichen (Leertaste/Enter) wählen sonst versehentlich ein Projekt
+    const hd = pickDlg.querySelector('h2');
+    hd.tabIndex = -1;
+    hd.focus();
+  }
+  function choose(projectId) {
+    const t = state.todos.find((x) => x.id === pickCtx);
+    pickCtx = null;
+    pickDlg.close();
+    if (t && projectId) { t.projectId = projectId; saveSoon(); ui.focus = t.date ? 'day-' + t.date : null; render(); }
+    else if (t && t.date) { const f = document.querySelector('[data-focus="day-' + t.date + '"]'); if (f) f.focus(); }
+  }
+  $('#pick-none').addEventListener('click', () => choose(null));
+  pickDlg.addEventListener('close', () => { pickCtx = null; });
 
   // ---------- Dialog: Datum abfragen ----------
   const dateDlg = $('#date-dialog');
@@ -2354,6 +2485,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     applySettings();
     app.dataset.view = ui.mode;
     app.replaceChildren(topBar(), ui.view === 'month' ? monthArea() : weekArea(), band(), listsArea(), tabsBar());
+    if (isMobile()) { const act = document.querySelector('.tabs [aria-current="page"]'); if (act) act.scrollIntoView({ inline: 'center', block: 'nearest' }); }
     [...app.querySelectorAll('.days, .mgrid, .lists')].forEach((el, i) => { if (scrolls[i]) el.scrollTop = scrolls[i]; });
     if (ui.mTarget) applyMonthTarget(false);
     if (ui.focus) {
@@ -3655,7 +3787,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   });
   editDlg.addEventListener('close', () => { if (editDlg.open) return; editCtx = null; render(); });
 
-  function fillEdit(text, date, listId, rule, ruleOnly, side) {
+  function fillEdit(text, date, listId, rule, ruleOnly, side, projectId) {
     $('#edit-title').textContent = ruleOnly ? 'Wiederkehrende Aufgabe' : 'Aufgabe';
     const o = editTarget();
     $('#edit-notes').value = (o && o.notes) || '';
@@ -3666,22 +3798,39 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     $('#edit-date').value = date || '';
     $('#edit-date-wrap').hidden = ruleOnly;
     $('#edit-list-wrap').hidden = ruleOnly;
-    const sel = $('#edit-list');
-    sel.replaceChildren(h('option', { value: '' }, '– keine Liste –'),
-      ...state.projects.filter((p) => (!p.archived && !p.trashed) || (listId && listById(listId) && listById(listId).projectId === p.id)).flatMap((p) => L.listsOf(state, p.id).map((l) => h('option', { value: l.id }, p.name + ' › ' + l.name))));
-    sel.value = listId || '';
+    const sel = $('#edit-project');
+    sel.replaceChildren(h('option', { value: '' }, '– kein Projekt –'),
+      ...state.projects.filter((p) => (!p.archived && !p.trashed) || p.id === projectId).map((p) => h('option', { value: p.id }, p.name)));
+    sel.value = projectId || '';
+    $('#edit-frist').checked = !!(listId && listById(listId) && listById(listId).deadline);
+    $('#edit-checks').hidden = ruleOnly;
+    $('#edit-where').hidden = ruleOnly;
+    editWhere();
     $('#edit-freq').value = rule ? rule.freq : '';
     $('#edit-interval').value = rule ? rule.interval : 1;
     syncInterval();
     openDrawer(editDlg, side);
     $('#edit-text').select();
   }
+  /** Wohin die Aufgabe nach dem Speichern kommt (Hinweis unter den Feldern). */
+  function editWhere() {
+    const proj = $('#edit-project').value;
+    const frist = $('#edit-frist');
+    frist.disabled = !proj;
+    if (!proj) frist.checked = false;
+    const date = $('#edit-date').value;
+    $('#edit-where').textContent = !proj ? 'Ohne Projekt: erscheint im Kalender' + (date ? '' : ' (heute)') + '.'
+      : frist.checked ? 'Landet in „Fristen“ des Projekts (rot im Kalender).'
+      : date ? 'Landet in „Geplant“ des Projekts und im Kalender.' : 'Ohne Datum: landet in „Aufgaben“ des Projekts.';
+  }
+  ['#edit-project', '#edit-frist', '#edit-date'].forEach((sel) => $(sel).addEventListener('input', editWhere));
+  ['#edit-project', '#edit-frist', '#edit-date'].forEach((sel) => $(sel).addEventListener('change', editWhere));
   function openEdit(id) {
     const t = state.todos.find((x) => x.id === id);
     if (!t) return;
     const side = placeDrawer(editDlg);
     editCtx = { kind: 'todo', id };
-    fillEdit(t.text, t.date, t.listId, t.recurId ? state.recurs.find((r) => r.id === t.recurId) : null, false, side);
+    fillEdit(t.text, t.date, t.listId, t.recurId ? state.recurs.find((r) => r.id === t.recurId) : null, false, side, t.projectId);
   }
   function openRule(id) {
     const r = state.recurs.find((x) => x.id === id);
@@ -3707,17 +3856,32 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     } else {
       const t = state.todos.find((x) => x.id === editCtx.id);
       if (!t) { editDlg.close(); return; }
-      const newList = $('#edit-list').value || null;
+      // Ziel: Frist → „Fristen“; Datum → „Geplant“ (kein Listenplatz); ohne Datum → „Aufgaben“ des Projekts
+      const projId = $('#edit-project').value || null;
+      const frist = $('#edit-frist').checked && !!projId;
       let date = $('#edit-date').value || null;
-      if (!date && (!newList || listById(newList).deadline)) date = today;
-      if (date !== t.date) {
+      let newList = null;
+      if (projId) {
+        const pl = L.listsOf(state, projId);
+        if (frist) {
+          const dl = pl.find((l) => l.deadline);
+          newList = dl ? dl.id : null;
+          if (!date) date = L.addDays(today, 7);
+        } else if (!date) {
+          const cur = t.listId && listById(t.listId);
+          const keep = cur && cur.projectId === projId && !cur.deadline ? cur : pl.find((l) => !l.deadline);
+          newList = keep ? keep.id : null;
+        }
+      }
+      if (!date && !newList) date = today;
+      if (date !== t.date || newList !== t.listId) {
         t.order = date ? L.nextOrder(state, date) : L.nextOrderInList(state, newList);
-        delete t.origDate;
-      } else if (!date && newList !== t.listId) t.order = L.nextOrderInList(state, newList);
+        if (date !== t.date) delete t.origDate;
+      }
       t.text = text;
       t.date = date;
       t.listId = newList;
-      if (newList) t.projectId = listById(newList).projectId;
+      t.projectId = projId;
       const rule = t.recurId ? state.recurs.find((r) => r.id === t.recurId) : null;
       if (freq) {
         if (rule) { rule.freq = freq; rule.interval = interval; }
@@ -3943,7 +4107,8 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     const made = L.materialize(state, today);
     const moved = L.rollover(state, today);
     if (moved || made) saveSoon();
-    if (moved && announce) toast(moved === 1 ? '1 offene Aufgabe auf heute verschoben.' : moved + ' offene Aufgaben auf heute verschoben.');
+    const ziel = 'auf heute';
+    if (moved && announce) toast(moved === 1 ? '1 offene Aufgabe ' + ziel + ' verschoben.' : moved + ' offene Aufgaben ' + ziel + ' verschoben.');
     if ((changed || moved || made) && !document.querySelector('dialog[open]') && document.activeElement && document.activeElement.tagName !== 'INPUT') render();
   }
   setInterval(() => checkNewDay(true), 30000);
