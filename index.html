@@ -590,6 +590,23 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
 .ovmeta { font-size: 12px; color: var(--muted); }
 @media (max-width: 700px) { .lists.overview-view { padding: 0 14px 16px; } .ovgrid { grid-template-columns: 1fr; } }
 
+/* Übersicht: volle Breite */
+.lists.overview-view { padding: 0 20px 20px; }
+.ov-wrap { width: 100%; }
+.ovgrid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+/* Fußleiste: Projekte links, feste Reiter (Übersicht, Erledigt, Papierkorb, Archiv) rechtsbündig und abgesetzt.
+   Die Reiter nutzen so viele Zeilen wie die Projekt-Reiter (--rows setzt app.js). */
+.tabs { align-items: stretch; }
+.tabs .ptabs { align-self: flex-start; }
+.tabs .tail { flex: none; display: grid; grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 1), 28px); align-items: center; height: auto; margin-left: 10px; padding: 0 4px 0 8px; border-left: 2px solid var(--faint); background: var(--panel); }
+.tabs .tail .ptab { height: 28px; }
+.tabs .tabhelp { flex: none; display: flex; align-items: flex-start; height: 28px; padding: 0 8px 0 2px; }
+@media (max-width: 700px) {
+  .tabs { align-items: flex-start; }
+  .tabs .tail { display: flex; height: 28px; }
+}
+
 </style>
 </head>
 <body>
@@ -784,7 +801,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
         <li><b>Projekt-Aktionen</b> (Seite öffnen, Umbenennen / Farbe, Archivieren, Löschen) liegen als Symbole rechts in der farbigen Leiste. Gelöschte Projekte liegen im <b>Papierkorb</b> und lassen sich zurückholen. Fenster wie Aufgabe oder Mitschrift schieben von rechts herein; links bleibt alles bedienbar</li>
-        <li><b>Übersicht</b> (Reiter unten rechts): ein Kachel-Raster mit dem Sachstand aller Projekte – Name, Kürzel, Ampel, Text, Stand-Datum und Zahl offener Aufgaben; ein Klick öffnet das Projekt</li>
+        <li><b>Übersicht</b> (Reiter unten rechts): ein Kachel-Raster mit dem Sachstand aller (nicht internen) Projekte – Name, Kürzel, Ampel, Text, Stand-Datum und Zahl offener Aufgaben; ein Klick öffnet das Projekt</li>
         <li><b>Archiv</b>: Projekte über das Symbol in der Leiste archivieren; sie verschwinden aus Kalender und Suche, bleiben im Reiter <b>Archiv</b> durchsuchbar und lassen sich wiederherstellen. Die Spalte <b>Sachstand</b> hält den aktuellen Stand je Projekt in wenigen Worten fest</li>
         <li><b>Interne Projekte</b> (Haken im Projektdialog): ihre Aufgaben stehen am Tag unter den übrigen, abgesetzt und dezenter; Priorität und Fristen bleiben oben. Neue Listen sind weiterhin möglich</li>
         <li>Auf dem Handy unten <b>wischen</b>, um zwischen Geplant, Fristen, Mitschriften und Listen zu wechseln</li>
@@ -2402,7 +2419,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-10-26 · Übersicht der Sachstände';
+  const BUILD = '2026-10-26 · Übersicht ohne interne Projekte, neue Fußleiste';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -2495,12 +2512,29 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   }
   const isDark = () => state.settings.mode === 'dark' || (state.settings.mode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
+  /** Die festen Reiter rechts (Übersicht … Archiv) bekommen so viele Zeilen wie die Projekt-Reiter, höchstens vier. */
+  function fitTail() {
+    const bar = document.querySelector('.tabs');
+    if (!bar || isMobile()) return;
+    const tail = bar.querySelector('.tail');
+    const pt = bar.querySelector('.ptabs');
+    if (!tail || !pt) return;
+    // Kleinste Zeilenzahl, bei der die Projekt-Reiter nicht mehr Zeilen brauchen als die festen Reiter haben
+    for (let rows = 1; rows <= 4; rows++) {
+      tail.style.setProperty('--rows', rows);
+      const need = Math.max(1, Math.round(pt.getBoundingClientRect().height / 28));
+      if (need <= rows) break;
+    }
+  }
+  window.addEventListener('resize', fitTail);
+
   function render() {
     const app = $('#app');
     const scrolls = [...app.querySelectorAll('.days, .mgrid, .lists')].map((el) => el.scrollTop);
     applySettings();
     app.dataset.view = ui.mode;
     app.replaceChildren(topBar(), ui.view === 'month' ? monthArea() : weekArea(), band(), listsArea(), tabsBar());
+    fitTail();
     if (isMobile()) { const act = document.querySelector('.tabs [aria-current="page"]'); if (act) act.scrollIntoView({ inline: 'center', block: 'nearest' }); }
     [...app.querySelectorAll('.days, .mgrid, .lists')].forEach((el, i) => { if (scrolls[i]) el.scrollTop = scrolls[i]; });
     if (ui.mTarget) applyMonthTarget(false);
@@ -3040,7 +3074,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   const LEVEL_TEXT = { ok: 'läuft', warn: 'Achtung', bad: 'kritisch' };
   function overviewArea() {
     const root = h('section', { class: 'lists overview-view', 'aria-label': 'Sachstände aller Projekte' });
-    const ps = activeProjects();
+    const ps = activeProjects().filter((p) => !p.internal);
     const grid = h('div', { class: 'ovgrid' }, ps.map((p) => {
       const open = L.openCountForProject(state, p.id);
       const card = h('div', { class: 'ovcard' + (p.statusLevel ? ' ov-' + p.statusLevel : ''), role: 'button', tabindex: '0', title: 'Projekt öffnen',
@@ -3054,7 +3088,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       card.style.setProperty('--c', p.color);
       return card;
     }));
-    root.append(h('div', { class: 'arch-wrap' }, grid));
+    root.append(h('div', { class: 'ov-wrap' }, ps.length ? grid : h('p', { class: 'arch-empty' }, 'Keine Projekte (interne Projekte erscheinen hier nicht).')));
     return root;
   }
   function openProjectFromOverview(id) {
@@ -3397,7 +3431,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     const trashTab = h('div', { class: 'ptab archtab trashtab', 'aria-current': ui.showTrash ? 'page' : null },
       h('button', { type: 'button', class: 'tabmain', title: 'Gelöschte Projekte wiederherstellen', onclick: () => { ui.showTrash = true; ui.showArchive = false; ui.showDone = false; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
         'Papierkorb ', h('span', { class: 'count' }, state.projects.filter((p) => p.trashed).length)));
-    return h('footer', { class: 'tabs' }, h('div', { class: 'ptabs' }, tabs), h('div', { class: 'tail' }, ovTab, archTab, trashTab, doneTab, ibtn('help', 'Bedienung', () => $('#help-dialog').showModal())));
+    return h('footer', { class: 'tabs' }, h('div', { class: 'ptabs' }, tabs), h('div', { class: 'tail' }, ovTab, doneTab, trashTab, archTab), h('div', { class: 'tabhelp' }, ibtn('help', 'Bedienung', () => $('#help-dialog').showModal())));
   }
   function moreIcon() {
     const svg = document.createElementNS(NS, 'svg');
