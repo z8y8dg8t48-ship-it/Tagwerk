@@ -575,6 +575,21 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   .tabs .tail { flex: none; padding: 0 6px 0 4px; }
 }
 
+/* Übersicht: Sachstände aller Projekte als Kacheln */
+.lists.overview-view { display: block; padding: 0 28px 20px; overflow-y: auto; }
+.ovgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; padding-top: 12px; }
+.ovcard { position: relative; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 12px 14px 10px 18px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; min-height: 120px; overflow: hidden; }
+.ovcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--c, var(--faint)); }
+.ovcard:hover, .ovcard:focus-visible { border-color: var(--accent); outline: none; }
+.ovhead { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ovname { font: 400 22px/22px var(--head); text-transform: uppercase; letter-spacing: 0.01em; overflow-wrap: anywhere; min-width: 0; }
+.ovlvl { margin-left: auto; flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--faint); }
+.ovlvl.lvl-ok { background: #2e9e5b; } .ovlvl.lvl-warn { background: #e0a100; } .ovlvl.lvl-bad { background: #d4372c; }
+.ovtext { font-size: 15px; line-height: 21px; font-weight: 500; white-space: pre-wrap; overflow-wrap: anywhere; flex: 1; display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; }
+.ovtext.empty { color: var(--faint); font-weight: 400; }
+.ovmeta { font-size: 12px; color: var(--muted); }
+@media (max-width: 700px) { .lists.overview-view { padding: 0 14px 16px; } .ovgrid { grid-template-columns: 1fr; } }
+
 </style>
 </head>
 <body>
@@ -769,6 +784,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
         <li><b>Projekt-Aktionen</b> (Seite öffnen, Umbenennen / Farbe, Archivieren, Löschen) liegen als Symbole rechts in der farbigen Leiste. Gelöschte Projekte liegen im <b>Papierkorb</b> und lassen sich zurückholen. Fenster wie Aufgabe oder Mitschrift schieben von rechts herein; links bleibt alles bedienbar</li>
+        <li><b>Übersicht</b> (Reiter unten rechts): ein Kachel-Raster mit dem Sachstand aller Projekte – Name, Kürzel, Ampel, Text, Stand-Datum und Zahl offener Aufgaben; ein Klick öffnet das Projekt</li>
         <li><b>Archiv</b>: Projekte über das Symbol in der Leiste archivieren; sie verschwinden aus Kalender und Suche, bleiben im Reiter <b>Archiv</b> durchsuchbar und lassen sich wiederherstellen. Die Spalte <b>Sachstand</b> hält den aktuellen Stand je Projekt in wenigen Worten fest</li>
         <li><b>Interne Projekte</b> (Haken im Projektdialog): ihre Aufgaben stehen am Tag unter den übrigen, abgesetzt und dezenter; Priorität und Fristen bleiben oben. Neue Listen sind weiterhin möglich</li>
         <li>Auf dem Handy unten <b>wischen</b>, um zwischen Geplant, Fristen, Mitschriften und Listen zu wechseln</li>
@@ -2386,7 +2402,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-10-26 · Projektabfrage, Frist-Kästchen, schmale Reiter am Handy';
+  const BUILD = '2026-10-26 · Übersicht der Sachstände';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -2881,13 +2897,13 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   }
 
   function band() {
-    if (ui.showDone || ui.showArchive || ui.showTrash) {
+    if (ui.showDone || ui.showArchive || ui.showTrash || ui.showOverview) {
       return h('div', { class: 'band' },
         h('div', { class: 'left' }, ui.mode === 'max' ? null : ibtn(ui.mode === 'closed' ? 'chev-u' : 'chev-d', ui.mode === 'closed' ? 'Listen einblenden' : 'Listen ausblenden', () => {
           ui.mode = ui.mode === 'closed' ? 'open' : 'closed';
           render();
         })),
-        h('span', { class: 'band-title' }, ui.showTrash ? 'Papierkorb' : ui.showArchive ? 'Archiv' : 'Erledigt'));
+        h('span', { class: 'band-title' }, ui.showOverview ? 'Übersicht · Sachstände' : ui.showTrash ? 'Papierkorb' : ui.showArchive ? 'Archiv' : 'Erledigt'));
     }
     const { pages } = pageInfo();
     const proj = curProject();
@@ -2947,6 +2963,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   }
 
   function listsArea() {
+    if (ui.showOverview) return overviewArea();
     if (ui.showTrash) return trashArea();
     if (ui.showArchive) return archiveArea();
     if (ui.showDone) return doneArea();
@@ -3019,6 +3036,39 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       h('div', { class: 'fill' }));
   }
 
+  // ---------- Übersicht: Sachstände aller Projekte ----------
+  const LEVEL_TEXT = { ok: 'läuft', warn: 'Achtung', bad: 'kritisch' };
+  function overviewArea() {
+    const root = h('section', { class: 'lists overview-view', 'aria-label': 'Sachstände aller Projekte' });
+    const ps = activeProjects();
+    const grid = h('div', { class: 'ovgrid' }, ps.map((p) => {
+      const open = L.openCountForProject(state, p.id);
+      const card = h('div', { class: 'ovcard' + (p.statusLevel ? ' ov-' + p.statusLevel : ''), role: 'button', tabindex: '0', title: 'Projekt öffnen',
+        onclick: () => openProjectFromOverview(p.id), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProjectFromOverview(p.id); } } },
+        h('div', { class: 'ovhead' },
+          h('span', { class: 'ovname' }, p.name),
+          badge(p),
+          h('span', { class: 'ovlvl lvl-' + (p.statusLevel || 'none'), title: p.statusLevel ? LEVEL_TEXT[p.statusLevel] : 'ohne Ampel' })),
+        h('div', { class: 'ovtext' + (p.status ? '' : ' empty') }, p.status || 'Noch kein Sachstand'),
+        h('div', { class: 'ovmeta' }, (p.statusAt ? 'Stand ' + fmtFull.format(L.parseISO(p.statusAt)) + ' · ' : '') + open + ' offen'));
+      card.style.setProperty('--c', p.color);
+      return card;
+    }));
+    root.append(h('div', { class: 'arch-wrap' }, grid));
+    return root;
+  }
+  function openProjectFromOverview(id) {
+    ui.projectId = id; ui.showOverview = false; ui.showDone = false; ui.showArchive = false; ui.showTrash = false;
+    ui.page = 0; ui.mcol = 0;
+    if (ui.mode === 'closed') ui.mode = 'open';
+    ui.mproj = null;
+    // Die Spalte „Sachstand“ ist die letzte der Seite: dorthin blättern
+    const { entries } = pageInfo();
+    const i = entries.findIndex((e) => e.id === 'sachstand');
+    if (i >= 0) ui.page = Math.floor(i / perPage());
+    render();
+  }
+
   // ---------- Archiv ----------
   function archiveProject(id) {
     const p = projectById(id);
@@ -3041,7 +3091,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     delete p.trashedAt;
     ui.projectId = p.id;
     ui.showArchive = false;
-    ui.showTrash = false;
+    ui.showTrash = false; ui.showOverview = false;
     ui.showDone = false;
     ui.archiveProject = null;
     ui.page = 0;
@@ -3274,10 +3324,10 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   // ---------- Projekt-Tabs ----------
   function tabsBar() {
     const tabs = activeProjects().map((p) => {
-      const active = !ui.showDone && !ui.showArchive && !ui.showTrash && p.id === curProject().id;
+      const active = !ui.showDone && !ui.showArchive && !ui.showTrash && !ui.showOverview && p.id === curProject().id;
       const count = L.openCountForProject(state, p.id);
       const el = h('div', { class: 'ptab', 'aria-current': active ? 'page' : null },
-        h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.projectId = p.id; ui.showDone = false; ui.showArchive = false; ui.showTrash = false; ui.page = 0; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, p.name, ' ', h('span', { class: 'count' }, count)));
+        h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.projectId = p.id; ui.showDone = false; ui.showArchive = false; ui.showTrash = false; ui.showOverview = false; ui.page = 0; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, p.name, ' ', h('span', { class: 'count' }, count)));
       // Reiter per Ziehen umsortieren
       el.setAttribute('draggable', 'true');
       el.addEventListener('dragstart', (e) => {
@@ -3323,7 +3373,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       return el;
     });
     const doneTab = h('div', { class: 'ptab donetab', 'aria-current': ui.showDone ? 'page' : null },
-      h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.showDone = true; ui.showArchive = false; ui.showTrash = false; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
+      h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.showDone = true; ui.showArchive = false; ui.showTrash = false; ui.showOverview = false; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
         'Erledigt ', h('span', { class: 'count' }, state.todos.filter((t) => t.done).length)));
     const plus = h('div', { class: 'ptab' }, h('button', { type: 'button', class: 'tabmain', title: 'Neues Projekt', 'aria-label': 'Neues Projekt', onclick: () => openProjectDialog(null) }, '+'));
     // Auf „+“ ablegen = ans Ende verschieben
@@ -3339,13 +3389,15 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       render();
     });
     tabs.push(plus);
+    const ovTab = h('div', { class: 'ptab archtab ovtab', 'aria-current': ui.showOverview ? 'page' : null },
+      h('button', { type: 'button', class: 'tabmain', title: 'Sachstände aller Projekte', onclick: () => { ui.showOverview = true; ui.showArchive = false; ui.showTrash = false; ui.showDone = false; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, 'Übersicht'));
     const archTab = h('div', { class: 'ptab archtab', 'aria-current': ui.showArchive ? 'page' : null },
-      h('button', { type: 'button', class: 'tabmain', title: 'Archivierte Projekte durchsuchen', onclick: () => { ui.showArchive = true; ui.showDone = false; ui.showTrash = false; ui.reorder = false; ui.archiveProject = null; ui.focus = 'archsearch'; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
+      h('button', { type: 'button', class: 'tabmain', title: 'Archivierte Projekte durchsuchen', onclick: () => { ui.showArchive = true; ui.showDone = false; ui.showTrash = false; ui.showOverview = false; ui.reorder = false; ui.archiveProject = null; ui.focus = 'archsearch'; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
         'Archiv ', h('span', { class: 'count' }, state.projects.filter((p) => p.archived && !p.trashed).length)));
     const trashTab = h('div', { class: 'ptab archtab trashtab', 'aria-current': ui.showTrash ? 'page' : null },
       h('button', { type: 'button', class: 'tabmain', title: 'Gelöschte Projekte wiederherstellen', onclick: () => { ui.showTrash = true; ui.showArchive = false; ui.showDone = false; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } },
         'Papierkorb ', h('span', { class: 'count' }, state.projects.filter((p) => p.trashed).length)));
-    return h('footer', { class: 'tabs' }, h('div', { class: 'ptabs' }, tabs), h('div', { class: 'tail' }, archTab, trashTab, doneTab, ibtn('help', 'Bedienung', () => $('#help-dialog').showModal())));
+    return h('footer', { class: 'tabs' }, h('div', { class: 'ptabs' }, tabs), h('div', { class: 'tail' }, ovTab, archTab, trashTab, doneTab, ibtn('help', 'Bedienung', () => $('#help-dialog').showModal())));
   }
   function moreIcon() {
     const svg = document.createElementNS(NS, 'svg');
@@ -4017,7 +4069,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     $('#search-dialog').close();
     ui.showDone = !!t.done;
     ui.showArchive = false;
-    ui.showTrash = false;
+    ui.showTrash = false; ui.showOverview = false;
     if (t.done) { if (ui.mode === 'closed') ui.mode = 'open'; }
     else if (t.date) {
       ui.view = 'week';
@@ -4046,7 +4098,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     document.body.append(calPop);
     const go = (iso) => {
       closeCal();
-      if (ui.showDone || ui.showArchive || ui.showTrash) { ui.showDone = false; ui.showArchive = false; ui.showTrash = false; }
+      if (ui.showDone || ui.showArchive || ui.showTrash) { ui.showDone = false; ui.showArchive = false; ui.showTrash = false; ui.showOverview = false; }
       if (ui.view === 'month') { ui.month = L.monthStart(iso); gotoMonthWeek(iso, 1); return; }
       showDate(iso);
       render();
