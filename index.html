@@ -340,21 +340,17 @@ dialog textarea { resize: vertical; min-height: 84px; line-height: 20px; font-fa
 
 /* ---------- Priorität ---------- */
 .prio { display: inline-block; margin-right: 5px; color: var(--accent); font-weight: 900; }
-.day .todo.frist .prio, .mchip.frist .prio { color: #fff; }
 
-/* ---------- Fristen: nur im Kalender rot hinterlegt (Woche und Monat), mit runden Ecken ---------- */
-.day .todo.frist, .mchip.frist { background: var(--frist); color: #fff; }
-.day .todo.frist { padding-left: 7px; border-radius: 7px; border-bottom-color: transparent; margin: 1px 0 2px; }
-.mchip.frist { border-radius: 5px; }
-.day .todo.frist:hover, .mchip.frist:hover { background: color-mix(in srgb, var(--frist) 86%, #000); }
-.day .todo.frist .todo-text a, .day .todo.frist .date-prefix, .day .todo.frist .todo-meta, .day .todo.frist .ind { color: #fff; }
-.day .todo.frist .date-prefix { opacity: 0.85; min-width: 36px; }
-.day .todo.frist .check, .mchip.frist .check { border-color: rgba(255, 255, 255, 0.8); background: transparent; }
-.day .todo.frist .check:hover, .mchip.frist .check:hover { background: rgba(255, 255, 255, 0.25); border-color: #fff; }
-.day .todo.frist .pbadge { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7); }
+/* ---------- Fristen: nur im Kalender, nur der Text ist rot hinterlegt (abgerundet) – das Kästchen bleibt neutral ---------- */
+.day .todo.frist .todo-text, .mchip.frist .mtext { background: var(--frist); color: #fff; border-radius: 7px; padding: 0 8px; }
+.mchip.frist .mtext { border-radius: 5px; padding: 0 5px; }
+.day .todo.frist { margin: 1px 0 2px; }
+.day .todo.frist:hover .todo-text, .mchip.frist:hover .mtext { background: color-mix(in srgb, var(--frist) 86%, #000); }
+.day .todo.frist .todo-text a, .mchip.frist .mtext a { color: #fff; }
+.day .todo.frist .prio, .mchip.frist .prio { color: #fff; }
+.day .todo.frist .pbadge, .mchip.frist .pbadge { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7); }
 .frist-flag { flex: none; margin-top: 0; height: 15px; padding: 0 5px; border-radius: 3px; background: #fff; color: var(--frist); font-size: 9.5px; font-weight: 800; letter-spacing: 0.05em; line-height: 15px; text-transform: uppercase; white-space: nowrap; }
 .mchip .frist-flag { margin-top: 1.5px; height: 14px; line-height: 14px; padding: 0 4px; }
-.mchip.frist { padding-left: 3px; }
 .frist-title { cursor: default !important; }
 
 /* ---------- Trennleiste in Projektfarbe ---------- */
@@ -436,7 +432,7 @@ dialog.minute textarea { width: 100%; min-height: 240px; font-size: 15px; line-h
 fieldset.people { border: 0; padding: 0; margin: 0 0 12px; }
 fieldset.people legend { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .plist { display: grid; gap: 6px; }
-.prow { display: grid; grid-template-columns: 1fr 1.3fr 28px; gap: 8px; align-items: center; }
+.prow { display: grid; grid-template-columns: 16px 1fr 1.3fr 28px; gap: 8px; align-items: center; }
 .prow input { width: 100%; }
 .prow .x { border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; padding: 0; }
 .prow .x:hover { color: var(--accent); }
@@ -450,7 +446,7 @@ dialog.small .hint { margin: -6px 0 12px; overflow-wrap: anywhere; }
 .quick { display: flex; gap: 6px; flex-wrap: wrap; }
 .quick button { border: 1px solid var(--line); background: none; border-radius: 6px; padding: 5px 10px; font-size: 13px; color: var(--text); }
 .quick button:hover { background: var(--band); }
-@media (max-width: 700px) { .prow { grid-template-columns: 1fr 28px; } .prow .porg { grid-column: 1; } .prow .x { grid-row: 1 / span 2; grid-column: 2; } }
+@media (max-width: 700px) { .prow { grid-template-columns: 16px 1fr 28px; } .prow .pname { grid-column: 2; } .prow .porg { grid-column: 2; } .prow .pgrip { grid-row: 1 / span 2; } .prow .x { grid-row: 1 / span 2; grid-column: 3; } }
 
 /* ---------- Leiste: Symbole statt Schaltfläche ---------- */
 .band .right { gap: 2px; }
@@ -607,6 +603,20 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   .tabs .tail { display: flex; height: 28px; }
 }
 
+.prow { position: relative; }
+.pgrip { cursor: grab; color: var(--faint); text-align: center; user-select: none; font-size: 16px; line-height: 1; }
+.pgrip:hover { color: var(--text); }
+.prow.dragging { opacity: 0.4; }
+.prow.ins-before::before, .prow.ins-after::after { content: ''; position: absolute; left: 0; right: 0; height: 2px; background: var(--accent); }
+.prow.ins-before::before { top: -4px; } .prow.ins-after::after { bottom: -4px; }
+
+/* Aufgaben aus Mitschriften */
+.tbadge { display: inline-block; vertical-align: 1px; margin-left: 2px; border: 1px solid var(--accent); background: none; color: var(--accent); border-radius: 10px; padding: 0 8px; height: 18px; font: 700 11px/16px var(--font); letter-spacing: 0.03em; cursor: pointer; }
+.tbadge:hover { background: var(--accent); color: #fff; }
+.tbadge.done { border-color: #2e9e5b; color: #2e9e5b; }
+.tbadge.done:hover { background: #2e9e5b; color: #fff; }
+.mtools .totask { color: var(--accent); border-color: var(--accent); }
+
 </style>
 </head>
 <body>
@@ -702,6 +712,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
           <button type="button" data-fmt="ul" title="Aufzählung">• Liste</button>
           <button type="button" data-fmt="ol" title="Nummerierte Liste">1. Liste</button>
           <button type="button" data-fmt="task" title="Checkliste (z. B. Aufgaben, Beschlüsse)">☐ Check</button>
+          <button type="button" data-fmt="totask" class="totask" title="Markierten Text (ohne Markierung: aktuelle Zeile) als Aufgabe anlegen – Strg+Umschalt+A">→ Aufgabe</button>
           <button type="button" data-fmt="link" title="Link einfügen">Link</button>
           <button type="button" data-fmt="hr" title="Trennlinie">―</button>
         </div>
@@ -800,6 +811,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
         <li>Erledigte Aufgaben liegen unter <b>Erledigt</b> (Tab rechts unten), die zuletzt abgehakten oben</li>
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
+        <li><b>Aufgaben aus Mitschriften</b>: Text oder Zeilen markieren und auf „→ Aufgabe“ klicken (oder Strg+Umschalt+A); ohne Markierung wird die aktuelle Zeile genommen. Der Text bleibt, die Zeile bekommt eine Marke ⟦T:…⟧ und erscheint in „Lesen“ als anklickbares „→ Aufgabe“ bzw. „✓ Aufgabe“. Teilnehmer lassen sich am Griff per Drag &amp; Drop sortieren; die Reihenfolge gilt auch in „Lesen“</li>
         <li><b>Projekt-Aktionen</b> (Seite öffnen, Umbenennen / Farbe, Archivieren, Löschen) liegen als Symbole rechts in der farbigen Leiste. Gelöschte Projekte liegen im <b>Papierkorb</b> und lassen sich zurückholen. Fenster wie Aufgabe oder Mitschrift schieben von rechts herein; links bleibt alles bedienbar</li>
         <li><b>Übersicht</b> (Reiter unten rechts): ein Kachel-Raster mit dem Sachstand aller (nicht internen) Projekte – Name, Kürzel, Ampel, Text, Stand-Datum und Zahl offener Aufgaben; ein Klick öffnet das Projekt</li>
         <li><b>Archiv</b>: Projekte über das Symbol in der Leiste archivieren; sie verschwinden aus Kalender und Suche, bleiben im Reiter <b>Archiv</b> durchsuchbar und lassen sich wiederherstellen. Die Spalte <b>Sachstand</b> hält den aktuellen Stand je Projekt in wenigen Worten fest</li>
@@ -1267,6 +1279,21 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     return JSON.stringify(o);
   }
 
+  // ---------- Aufgaben aus Mitschriften ----------
+  // Eine übernommene Zeile bekommt am Ende die Marke ⟦T:schlüssel⟧; in „Lesen“ erscheint dafür ein Aufgaben-Schild.
+  const MARK_RE = /\s*⟦T:([0-9a-z]{6,12})⟧/g;
+  const taskKey = (id) => String(id).replace(/[^0-9a-z]/gi, '').toLowerCase().slice(0, 10);
+  const stripTaskMarks = (text) => String(text || '').replace(MARK_RE, '');
+  /** Zerlegt Text in [{text}|{mark}] – die Marken stehen für verknüpfte Aufgaben. */
+  function splitTaskMarks(text) {
+    const s = String(text || '');
+    const parts = [];
+    let last = 0;
+    s.replace(MARK_RE, (m, k, i) => { if (i > last) parts.push({ text: s.slice(last, i) }); parts.push({ mark: k }); last = i + m.length; return m; });
+    if (last < s.length) parts.push({ text: s.slice(last) });
+    return parts;
+  }
+
   // ---------- Mitschriften ----------
   /** Teilnehmer: Liste aus {name, org}; alte Texte („A, B“) werden zerlegt. */
   function cleanPeople(v) {
@@ -1672,7 +1699,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     todosOnDate, todosInList, listsOf, plannedForProject, nextOrder, nextOrderInList,
     rollover, orderForIndex, moveTodo, moveToList, reorderLists,
     occursOn, materialize, virtualOn, search,
-    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople, archivedIds, internalIds, searchArchive, APP, isoWeek, reorderProjects, renumberProjects,
+    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople, archivedIds, internalIds, searchArchive, APP, taskKey, stripTaskMarks, splitTaskMarks, isoWeek, reorderProjects, renumberProjects,
   };
 });
 
@@ -2419,7 +2446,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-10-26 · Übersicht ohne interne Projekte, neue Fußleiste';
+  const BUILD = '2026-10-27 · Aufgaben aus Mitschriften, Teilnehmer sortieren';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -2713,6 +2740,27 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   }
 
   // ---------- Aufgabenzeile ----------
+  /** Legt aus Mitschrift-Text eine Aufgabe im Projekt an (ohne Datum: Liste „Aufgaben“ des Projekts). */
+  function taskFromText(text, projectId) {
+    const list = L.listsOf(state, projectId).find((l) => !l.deadline);
+    const todo = { id: L.uid(), text: text.slice(0, 500), date: list ? null : today, listId: list ? list.id : null, projectId, done: false,
+      order: list ? L.nextOrderInList(state, list.id) : L.nextOrder(state, today) };
+    state.todos.push(todo);
+    saveSoon();
+    return todo;
+  }
+  /** Text mit Aufgaben-Schildern statt der ⟦T:…⟧-Marken. */
+  function richMarks(text) {
+    const frag = document.createDocumentFragment();
+    for (const p of L.splitTaskMarks(text)) {
+      if (p.text !== undefined) { frag.append(rich(p.text)); continue; }
+      const t = state.todos.find((x) => L.taskKey(x.id) === p.mark);
+      if (!t) continue;
+      frag.append(' ', h('button', { type: 'button', class: 'tbadge' + (t.done ? ' done' : ''), title: 'Aufgabe öffnen: ' + t.text,
+        onclick: (e) => { e.stopPropagation(); openEdit(t.id); } }, t.done ? '✓ Aufgabe' : '→ Aufgabe'));
+    }
+    return frag;
+  }
   function rich(text) {
     const frag = document.createDocumentFragment();
     for (const tk of L.tokenize(text)) {
@@ -3502,12 +3550,12 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     const bl = L.parseBlocks(text);
     if (!bl.length) { out.append(h('p', { class: 'mempty' }, 'Noch kein Text.')); return out; }
     for (const b of bl) {
-      if (b.t === 'h') out.append(h('h' + (b.level + 2), { class: 'mh' }, rich(b.text)));
+      if (b.t === 'h') out.append(h('h' + (b.level + 2), { class: 'mh' }, richMarks(b.text)));
       else if (b.t === 'hr') out.append(h('hr'));
-      else if (b.t === 'p') out.append(h('p', {}, rich(b.text)));
+      else if (b.t === 'p') out.append(h('p', {}, richMarks(b.text)));
       else {
         const lis = b.items.map((it) => h('li', { class: it.task === null ? null : 'task' + (it.task ? ' done' : '') },
-          it.task === null ? null : h('span', { class: 'tbox', 'aria-hidden': 'true' }, it.task ? '☑' : '☐'), rich(it.text)));
+          it.task === null ? null : h('span', { class: 'tbox', 'aria-hidden': 'true' }, it.task ? '☑' : '☐'), richMarks(it.text)));
         out.append(h(b.t, { class: b.t === 'ul' && b.items.some((i) => i.task !== null) ? 'tasks' : null, start: b.t === 'ol' && b.start !== 1 ? String(b.start) : null }, lis));
       }
     }
@@ -3539,7 +3587,8 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       const known = state.minutes.flatMap((mm) => mm.participants).find((q) => q.name.toLowerCase() === name.value.trim().toLowerCase() && q.org);
       if (known) org.value = known.org;
     });
-    const row = h('div', { class: 'prow' }, name, org, h('button', { type: 'button', class: 'x', title: 'Teilnehmer entfernen', 'aria-label': 'Teilnehmer entfernen', onclick: () => { row.remove(); minDirty = true; } }, '×'));
+    const grip = h('span', { class: 'pgrip', draggable: 'true', title: 'Zum Umsortieren ziehen', 'aria-label': 'Teilnehmer verschieben' }, '⠿');
+    const row = h('div', { class: 'prow' }, grip, name, org, h('button', { type: 'button', class: 'x', title: 'Teilnehmer entfernen', 'aria-label': 'Teilnehmer entfernen', onclick: () => { row.remove(); minDirty = true; } }, '×'));
     const next = (e) => {
       if (e.key !== 'Enter' || e.isComposing) return;
       e.preventDefault();
@@ -3550,8 +3599,40 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     };
     name.addEventListener('keydown', next);
     org.addEventListener('keydown', next);
+    grip.addEventListener('dragstart', (e) => {
+      pDrag = row;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', 'teilnehmer');
+      try { e.dataTransfer.setDragImage(row, 10, 14); } catch (err) { /* optional */ }
+      row.classList.add('dragging');
+    });
+    grip.addEventListener('dragend', () => { pDrag = null; row.classList.remove('dragging'); clearPMarks(); });
     return row;
   }
+  // Teilnehmer per Ziehen am Griff umsortieren (die Reihenfolge gilt auch im „Lesen“-Text und im Word-Export)
+  let pDrag = null;
+  const clearPMarks = () => peopleBox.querySelectorAll('.ins-before, .ins-after').forEach((x) => x.classList.remove('ins-before', 'ins-after'));
+  function pDropTarget(y) {
+    const rows = [...peopleBox.children].filter((r) => r !== pDrag);
+    for (const r of rows) { const b = r.getBoundingClientRect(); if (y < b.top + b.height / 2) return { row: r, before: true }; }
+    return rows.length ? { row: rows[rows.length - 1], before: false } : null;
+  }
+  peopleBox.addEventListener('dragover', (e) => {
+    if (!pDrag) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    clearPMarks();
+    const t = pDropTarget(e.clientY);
+    if (t) t.row.classList.add(t.before ? 'ins-before' : 'ins-after');
+  });
+  peopleBox.addEventListener('drop', (e) => {
+    if (!pDrag) return;
+    e.preventDefault();
+    const t = pDropTarget(e.clientY);
+    clearPMarks();
+    if (t) { if (t.before) t.row.before(pDrag); else t.row.after(pDrag); minDirty = true; if (!q('#min-preview').hidden) minSetPreview(true); }
+    pDrag = null;
+  });
   function addPerson(focus) {
     const r = personRow(null);
     peopleBox.append(r);
@@ -3626,7 +3707,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     lines.push('Datum: ' + (d ? fmtMin.format(L.parseISO(d)) : '') + (t ? ', ' + t : ''));
     const people = readPeople();
     if (people.length) lines.push('Teilnehmer:', ...people.map((x) => '- ' + personText(x)));
-    const text = lines.join('\n') + '\n\n' + minBody.value;
+    const text = lines.join('\n') + '\n\n' + L.stripTaskMarks(minBody.value);
     try { await navigator.clipboard.writeText(text); toast('Mitschrift kopiert.'); } catch (err) { toast('Kopieren war nicht möglich.'); }
   });
 
@@ -3640,7 +3721,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       dateText: date ? new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(L.parseISO(date)) : '',
       timeText: timeSpan({ start: q('#min-start').value, end: q('#min-end').value }) ? timeSpan({ start: q('#min-start').value, end: q('#min-end').value }) + ' Uhr' : '',
       participants: readPeople(),
-      body: minBody.value,
+      body: L.stripTaskMarks(minBody.value),
     });
     const safe = title.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || 'Mitschrift';
     const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
@@ -3708,6 +3789,35 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       return { value: v.slice(0, s) + t + v.slice(e), start: urlStart, end: urlStart + 8 };
     });
   }
+  /** Markierten Text (oder die Zeile des Cursors) als Aufgabe(n) anlegen; der Text bleibt, am Zeilenende steht eine Marke zur Verknüpfung. */
+  function convertToTasks() {
+    if (!minCtx || !projectById(minCtx.projectId)) return;
+    const made = [];
+    let skipped = 0;
+    taEdit((v, s, e) => {
+      const a = s > 0 ? v.lastIndexOf('\n', s - 1) + 1 : 0;
+      const eEff = e > s && v[e - 1] === '\n' ? e - 1 : e;
+      let b = v.indexOf('\n', eEff);
+      if (b < 0) b = v.length;
+      const lines = v.slice(a, b).split('\n');
+      const partial = lines.length === 1 && e > s ? v.slice(s, e) : null; // markierter Teil einer Zeile = Aufgabentext
+      const clean = (t) => L.stripTaskMarks(t).replace(/^\s*(?:[-*•]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|#{1,3}\s+)?/, '').trim();
+      const out = lines.map((line) => {
+        const text = clean(partial !== null ? partial : line);
+        if (!text || /^(-{3,}|\*{3,})$/.test(text)) return line;
+        if (L.splitTaskMarks(line).some((p) => p.mark)) { skipped += 1; return line; }
+        const todo = taskFromText(text, minCtx.projectId);
+        made.push(todo);
+        return line.replace(/\s+$/, '') + ' ⟦T:' + L.taskKey(todo.id) + '⟧';
+      });
+      const joined = out.join('\n');
+      return { value: v.slice(0, a) + joined + v.slice(b), start: a, end: a + joined.length };
+    });
+    if (!made.length) { toast(skipped ? 'Diese Zeile ist schon eine Aufgabe.' : 'Zeile markieren oder Cursor in eine Zeile mit Text setzen.'); return; }
+    toast(made.length === 1 ? 'Aufgabe angelegt (Liste „Aufgaben“).' : made.length + ' Aufgaben angelegt (Liste „Aufgaben“).');
+    render();
+    if (made.length === 1) setTimeout(() => askDate(made[0].id, false), 0);
+  }
   q('#min-tools').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-fmt]');
     if (!b) return;
@@ -3715,6 +3825,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     if (f === 'b') wrapSel('**');
     else if (f === 'i') wrapSel('*');
     else if (f === 'link') insertLink();
+    else if (f === 'totask') convertToTasks();
     else if (f === 'hr') taEdit((v, s, e2) => { const t = (s > 0 && v[s - 1] !== '\n' ? '\n' : '') + '---\n'; return { value: v.slice(0, e2) + t + v.slice(e2), start: e2 + t.length, end: e2 + t.length }; });
     else prefixLines(f);
   });
@@ -3723,6 +3834,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       if (e.key === 'b' || e.key === 'B') { e.preventDefault(); wrapSel('**'); return; }
       if (e.key === 'i' || e.key === 'I') { e.preventDefault(); wrapSel('*'); return; }
     }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); convertToTasks(); return; }
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && minBody.selectionStart === minBody.selectionEnd) {
       const v = minBody.value;
       const s = minBody.selectionStart;
