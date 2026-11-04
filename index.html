@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Tagwerk</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon-192.png">
@@ -617,6 +617,45 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
 .tbadge.done { border-color: #2e9e5b; color: #2e9e5b; }
 .tbadge.done:hover { background: #2e9e5b; color: #fff; }
 .mtools .totask { color: var(--accent); border-color: var(--accent); }
+
+/* ---------- Handy / Touch: große Tippflächen, iOS-Sicherheitsbereiche ---------- */
+@supports (height: 100dvh) {
+  html, body { height: 100dvh; }
+}
+@media (max-width: 700px), (pointer: coarse) {
+  #app { padding-top: env(safe-area-inset-top); }
+  .ibtn, .band .ibtn { width: 42px; height: 42px; border-radius: 8px; }
+  .ibtn svg { width: 20px; height: 20px; }
+  .band, .band .left, .band .right { height: 46px; }
+  .band .left { left: 6px; gap: 0; }
+  .band .right { right: 6px; gap: 0; }
+  .band .dots { gap: 10px; }
+  .dotbtn { position: relative; width: 8px; height: 8px; }
+  .dotbtn::after { content: ''; position: absolute; inset: -17px -7px; }
+  .edge-small { width: 34px; height: 40px; }
+  .newmin { padding: 12px 16px; font-size: 15px; }
+  .mtools button { min-height: 40px; min-width: 40px; }
+  .pickbtn { padding: 13px 14px; font-size: 15px; }
+  .tabs { min-height: 46px; padding-bottom: env(safe-area-inset-bottom); }
+  .ptab { height: 46px; padding: 0 16px; font-size: 12px; }
+  .ptab .more { width: 28px; height: 28px; }
+  .tabs .tail { height: 46px; grid-template-rows: repeat(var(--rows, 1), 46px); }
+  .tabs .tail .ptab { height: 46px; }
+  .tabs .tabhelp { height: 46px; align-items: center; }
+}
+@media (max-width: 700px) {
+  .tabs .tail { display: flex; }
+  .band .right .ibtn { width: 38px; }
+  .band .left .ibtn { width: 38px; }
+}
+@media (max-width: 700px) {
+  .bar { display: flex; flex-wrap: wrap; align-items: center; height: auto; padding: 2px 6px 4px; row-gap: 2px; }
+  .bar-left { order: 1; flex: 1; justify-content: space-between; max-width: 190px; }
+  .bar .brand { order: 2; margin-left: auto; }
+  .bar-right { order: 3; flex: 1 0 100%; justify-content: space-between; gap: 8px; }
+  .bar-right .seg { flex: 1; margin: 0; }
+  .bar-right .seg button { flex: 1; line-height: 32px; font-size: 11px; padding: 0 6px; white-space: nowrap; }
+}
 
 </style>
 </head>
