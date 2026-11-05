@@ -657,6 +657,42 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   .bar-right .seg button { flex: 1; line-height: 32px; font-size: 11px; padding: 0 6px; white-space: nowrap; }
 }
 
+/* Sicherungen */
+.blist { list-style: none; margin: 0 0 12px; padding: 0; max-height: 50vh; overflow-y: auto; border-top: 1px solid var(--line); }
+.brow { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+.brow .bmain { flex: 1; min-width: 0; }
+.brow .bmeta { color: var(--muted); font-size: 12px; }
+.brow .bmiss { color: var(--accent); font-weight: 700; font-size: 12.5px; margin-top: 2px; }
+.brow.has-missing { background: var(--accent-soft); }
+.brow button { flex: none; }
+
+/* ---------- Projektleiste (Desktop größer; interne Projekte klar abgesetzt) ---------- */
+:root { --tabh: 40px; }
+@media (max-width: 700px), (pointer: coarse) { :root { --tabh: 46px; } }
+.tabs { min-height: var(--tabh); }
+.ptab { height: var(--tabh); font-size: 12.5px; padding: 0 18px; }
+.tabs .tail .ptab { height: var(--tabh); }
+.tabs .tail { grid-template-rows: repeat(var(--rows, 1), var(--tabh)); }
+.tabs .tabhelp { height: var(--tabh); align-items: center; }
+.ptab .more { width: 22px; height: 22px; }
+.ptab .count { font-size: 12px; }
+@media (max-width: 700px) { .ptab { padding: 0 16px; } .tabs .tail { height: var(--tabh); } }
+
+/* normale Projekte: kräftiger Balken in der Projektfarbe */
+.ptab.proj { box-sizing: border-box; border-top: 5px solid var(--pc, var(--faint)); color: var(--text); font-weight: 800; margin-right: 1px; }
+.ptab.proj[aria-current="page"] { background: var(--band); box-shadow: inset 0 -3px 0 var(--pc, var(--accent)); }
+/* interne Projekte: gestrichelter Balken, schraffierter Grund, gedämpfte Schrift, Kennzeichen „intern“ */
+.ptab.proj.internal { border-top-style: dashed; color: var(--muted); font-style: italic; font-weight: 700;
+  background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(128, 128, 128, 0.14) 6px 12px); }
+.ptab.proj.internal[aria-current="page"] { background: var(--band); color: var(--text); }
+.ptab .ibadge { font-style: normal; font-weight: 800; font-size: 9px; letter-spacing: 0.08em; border: 1px solid currentColor; border-radius: 9px; padding: 0 6px; height: 15px; line-height: 13px; margin-right: 2px; }
+.ptab.proj.insert-left { box-shadow: inset 3px 0 0 var(--accent); }
+.ptab.proj.insert-right { box-shadow: inset -3px 0 0 var(--accent); }
+
+/* Seitenfenster enden oberhalb der Projektleiste */
+dialog.drawer, dialog.drawer.detail, dialog.drawer.minute { bottom: var(--tabs-h, 0px); height: auto; }
+dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--bg); padding: 10px 0 8px; margin-top: 8px; border-top: 1px solid var(--line); z-index: 2; }
+
 </style>
 </head>
 <body>
@@ -834,6 +870,23 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     </form>
   </dialog>
 
+  <dialog id="backup-dialog" class="drawer">
+    <form method="dialog" id="backup-form">
+      <h2>Sicherungen</h2>
+      <p class="hint">Tagwerk sichert auf diesem Gerät automatisch: 3 Stunden lang bei jeder Änderung, 2 Tage stündlich, 30 Tage täglich. Außerdem vor jedem Abgleich, vor dem Löschen und beim Speichern einer Mitschrift. „Fehlendes zurückholen“ legt nur wieder an, was jetzt fehlt, und überschreibt nichts.</p>
+      <ul id="backup-list" class="blist"></ul>
+      <div class="row2">
+        <button type="button" id="backup-export">Sicherung herunterladen</button>
+        <button type="button" id="backup-file">Fehlendes aus Datei zurückholen …</button>
+      </div>
+      <input id="restore-file" type="file" accept="application/json,.json" hidden>
+      <div class="dialog-actions">
+        <span class="spacer"></span>
+        <button type="submit" class="primary">Fertig</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="search-dialog" class="search">
     <form method="dialog" id="search-form">
       <input id="search-input" type="search" placeholder="Alle Aufgaben durchsuchen …" autocomplete="off" aria-label="Suche">
@@ -852,6 +905,8 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
         <li><b>Aufgaben aus Mitschriften</b>: Text oder Zeilen markieren und auf „→ Aufgabe“ klicken (oder Strg+Umschalt+A); ohne Markierung wird die aktuelle Zeile genommen. Der Text bleibt, die Zeile bekommt eine Marke ⟦T:…⟧ und erscheint in „Lesen“ als anklickbares „→ Aufgabe“ bzw. „✓ Aufgabe“. Teilnehmer lassen sich am Griff per Drag &amp; Drop sortieren; die Reihenfolge gilt auch in „Lesen“</li>
+        <li><b>Datensicherheit</b>: Tagwerk legt auf jedem Gerät automatisch Sicherungen an (Symbol oben links mit den zwei Pfeilen → „Sicherungen / Wiederherstellung“). Fehlt etwas, zeigt die Liste „Fehlt jetzt: …“, ein Klick holt es zurück, ohne Vorhandenes zu überschreiben. Auch eine alte Datei (z. B. frühere OneDrive-Version von tagwerk.json) lässt sich so einlesen. Nicht gespeicherte Mitschriften kommen nach einem Neustart als Entwurf zurück</li>
+        <li><b>Projektleiste</b> unten: normale Projekte haben einen farbigen Balken, <b>interne</b> sind schraffiert, kursiv und mit „intern“ gekennzeichnet. Seitenfenster enden oberhalb der Leiste, alle Projekte bleiben erreichbar</li>
         <li><b>Projekt-Aktionen</b> (Seite öffnen, Umbenennen / Farbe, Archivieren, Löschen) liegen als Symbole rechts in der farbigen Leiste. Gelöschte Projekte liegen im <b>Papierkorb</b> und lassen sich zurückholen. Fenster wie Aufgabe oder Mitschrift schieben von rechts herein; links bleibt alles bedienbar</li>
         <li><b>Übersicht</b> (Reiter unten rechts): ein Kachel-Raster mit dem Sachstand aller (nicht internen) Projekte – Name, Kürzel, Ampel, Text, Stand-Datum und Zahl offener Aufgaben; ein Klick öffnet das Projekt</li>
         <li><b>Archiv</b>: Projekte über das Symbol in der Leiste archivieren; sie verschwinden aus Kalender und Suche, bleiben im Reiter <b>Archiv</b> durchsuchbar und lassen sich wiederherstellen. Die Spalte <b>Sachstand</b> hält den aktuellen Stand je Projekt in wenigen Worten fest</li>
@@ -1172,9 +1227,12 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     }
     if (Array.isArray(raw.minutes)) {
       for (const m of raw.minutes) {
-        if (!m || typeof m.id !== 'string' || !projectIds.has(m.projectId)) continue;
+        if (!m || typeof m.id !== 'string') continue;
+        // Mitschrift ohne (noch vorhandenes) Projekt nie verwerfen: dem ersten Projekt zuordnen
+        const pid = projectIds.has(m.projectId) ? m.projectId : (s.projects[0] && s.projects[0].id);
+        if (!pid) continue;
         const min = {
-          id: m.id, projectId: m.projectId,
+          id: m.id, projectId: pid,
           title: typeof m.title === 'string' ? m.title.slice(0, 200) : '',
           date: typeof m.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.date) ? m.date : todayISO(),
           start: cleanTime(m.start), end: cleanTime(m.end),
@@ -1202,7 +1260,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   }
 
   // ---------- Abgleich zwischen Geräten ----------
-  const APP = 20261026; // Stand des Programms; wandert in die Abgleich-Datei, damit veraltete Geräte sich erneuern
+  const APP = 20261105; // Stand des Programms; wandert in die Abgleich-Datei, damit veraltete Geräte sich erneuern
   const COLS = ['projects', 'lists', 'todos', 'recurs', 'minutes'];
   const TOMBSTONE_DAYS = 90;
   function stable(v) {
@@ -1257,6 +1315,57 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       }
     }
   }
+  /**
+   * „Rückgängig“ nur für das, was eine Aktion verändert hat (before → after), im aktuellen Stand `cur`.
+   * Alles, was inzwischen anderweitig dazukam oder sich änderte (neue Mitschrift, abgehakte Aufgabe, Abgleich), bleibt unangetastet.
+   */
+  function revertChanges(cur, before, after, now) {
+    const clone = (x) => JSON.parse(JSON.stringify(x));
+    for (const col of COLS) {
+      const b = new Map(before[col].map((x) => [x.id, x]));
+      const a = new Map(after[col].map((x) => [x.id, x]));
+      for (const [id, bi] of b) {
+        const ai = a.get(id);
+        if (ai && hashItem(ai) === hashItem(bi)) continue; // von der Aktion nicht berührt
+        const idx = cur[col].findIndex((x) => x.id === id);
+        const copy = clone(bi);
+        copy.updatedAt = now;
+        if (idx < 0) cur[col].push(copy);
+        else if (ai && hashItem(cur[col][idx]) !== hashItem(ai)) continue; // inzwischen anders geändert: nicht überschreiben
+        else cur[col][idx] = copy;
+        delete cur.deleted[id];
+      }
+      for (const [id, ai] of a) {
+        if (b.has(id)) continue; // von der Aktion neu angelegt: wieder entfernen, falls unverändert
+        const idx = cur[col].findIndex((x) => x.id === id);
+        if (idx >= 0 && hashItem(cur[col][idx]) === hashItem(ai)) cur[col].splice(idx, 1);
+      }
+    }
+  }
+  /**
+   * Holt aus einem älteren Stand (`old`) alles zurück, was im aktuellen Stand fehlt – ohne etwas zu überschreiben.
+   * Mit `apply=false` wird nur gezählt. Gibt {projects, lists, todos, recurs, minutes} zurück.
+   */
+  function restoreMissing(cur, old, now, apply) {
+    const out = {};
+    const have = new Set();
+    for (const col of COLS) for (const it of cur[col]) have.add(it.id);
+    // Projekte zuerst, damit Mitschriften und Aufgaben einen Platz haben
+    for (const col of ['projects', 'lists', 'recurs', 'todos', 'minutes']) {
+      out[col] = 0;
+      for (const it of old[col] || []) {
+        if (have.has(it.id)) continue;
+        out[col]++;
+        if (!apply) continue;
+        const copy = JSON.parse(JSON.stringify(it));
+        copy.updatedAt = now;
+        cur[col].push(copy);
+        have.add(it.id);
+        delete cur.deleted[it.id];
+      }
+    }
+    return out;
+  }
   /** Hält Merkzettel und Stand der Elemente zusammen (nach dem Übernehmen von Fremddaten). */
   function rehash(state) {
     const next = {};
@@ -1292,7 +1401,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   function merge(local, remote) {
     const deleted = Object.assign({}, remote.deleted);
     for (const [id, at] of Object.entries(local.deleted)) deleted[id] = Math.max(deleted[id] || 0, at);
-    const out = { version: 2, settings: local.settings, deleted, sync: local.sync };
+    const out = { version: 2, settings: local.settings, deleted, sync: Object.assign({}, local.sync) };
     for (const col of COLS) {
       const byId = new Map();
       for (const it of remote[col]) byId.set(it.id, it);
@@ -1309,7 +1418,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     for (const col of COLS) for (const it of out[col]) if (deleted[it.id] < (it.updatedAt || 0)) delete deleted[it.id];
     dedupeDeadlineLists(out);
     const res = normalize(JSON.parse(JSON.stringify(out)));
-    res.sync = local.sync;
+    res.sync = Object.assign({}, local.sync); // eigene Kopie: der lebende Stand behält seinen Merkzettel (sonst würden später Eingegangenes und Lokales verwechselt)
     rehash(res);
     return res;
   }
@@ -1735,7 +1844,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   return {
     DAYS_VISIBLE, DEFAULT_ACCENT, FREQS,
     toISO, parseISO, addDays, daysBetween, todayISO, visibleDays, uid,
-    emptyState, normalize, ensureDefaults, monthStart, addMonths, monthGrid, ensureDeadlineLists, touch, markChanged, rehash, fingerprint, isPristine, merge, uploadText, hashItem, isDeadline, fristenOf, overdueFristen, daysForSpan, workdayFrom, stepWorkday, isWeekend, SPANS, doneTodos, openCountForProject, reorderSubtasks, weekStart, deriveCode, cleanCode, cleanSubs, subtaskProgress,
+    emptyState, normalize, ensureDefaults, monthStart, addMonths, monthGrid, ensureDeadlineLists, touch, markChanged, revertChanges, restoreMissing, rehash, fingerprint, isPristine, merge, uploadText, hashItem, isDeadline, fristenOf, overdueFristen, daysForSpan, workdayFrom, stepWorkday, isWeekend, SPANS, doneTodos, openCountForProject, reorderSubtasks, weekStart, deriveCode, cleanCode, cleanSubs, subtaskProgress,
     todosOnDate, todosInList, listsOf, plannedForProject, nextOrder, nextOrderInList,
     rollover, orderForIndex, moveTodo, moveToList, reorderLists,
     occursOn, materialize, virtualOn, search,
@@ -1924,6 +2033,95 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
 </script>
   <script>
 'use strict';
+// Automatische Sicherungen auf diesem Gerät (IndexedDB). Ergänzen den Abgleich: Wer etwas verliert, findet es hier wieder.
+(function () {
+  const DB = 'tagwerk-backup';
+  const STORE = 'snaps';
+  const HOUR = 3600000;
+  const DAY = 24 * HOUR;
+  let dbp = null;
+  let lastHash = null;
+  let lastAt = 0;
+  let busy = Promise.resolve();
+
+  function open() {
+    if (dbp) return dbp;
+    dbp = new Promise((resolve, reject) => {
+      if (!window.indexedDB) { reject(new Error('kein IndexedDB')); return; }
+      const rq = indexedDB.open(DB, 1);
+      rq.onupgradeneeded = () => { rq.result.createObjectStore(STORE, { keyPath: 't' }); };
+      rq.onsuccess = () => resolve(rq.result);
+      rq.onerror = () => reject(rq.error);
+    });
+    dbp.catch(() => { dbp = null; });
+    return dbp;
+  }
+  const req = (r) => new Promise((resolve, reject) => { r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
+  const hash = (s) => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h) + ':' + s.length; };
+
+  function counts(json) {
+    try {
+      const o = JSON.parse(json);
+      return { todos: (o.todos || []).length, minutes: (o.minutes || []).length, projects: (o.projects || []).length };
+    } catch (e) { return { todos: 0, minutes: 0, projects: 0 }; }
+  }
+
+  /** Bewahrt Sicherungen: 3 Stunden lang alle, 2 Tage stündlich, 30 Tage täglich (höchstens 160 Stück). */
+  async function prune(db, now) {
+    const all = await req(db.transaction(STORE).objectStore(STORE).getAllKeys());
+    const keep = new Set();
+    const seen = new Set();
+    for (const t of all.slice().sort((a, b) => b - a)) {
+      const age = now - t;
+      let bucket = null;
+      if (age <= 3 * HOUR) bucket = 't' + t;
+      else if (age <= 2 * DAY) bucket = 'h' + Math.floor(t / HOUR);
+      else if (age <= 30 * DAY) bucket = 'd' + Math.floor(t / DAY);
+      if (bucket && !seen.has(bucket) && keep.size < 160) { seen.add(bucket); keep.add(t); }
+    }
+    const drop = all.filter((t) => !keep.has(t));
+    if (!drop.length) return;
+    const store = db.transaction(STORE, 'readwrite').objectStore(STORE);
+    for (const t of drop) store.delete(t);
+  }
+
+  /**
+   * Legt eine Sicherung an. force=false: höchstens alle 10 Minuten; force=true: immer sofort.
+   * Gleiche Stände werden nie doppelt gespeichert.
+   */
+  function add(json, label, force) {
+    const run = async () => {
+      const now = Date.now();
+      const minGap = force ? 0 : 10 * 60000;
+      const h = hash(json);
+      if (h === lastHash || now - lastAt < minGap) return false;
+      const db = await open();
+      const store = db.transaction(STORE, 'readwrite').objectStore(STORE);
+      await req(store.put({ t: now, label: label || 'automatisch', h, n: counts(json), json }));
+      lastHash = h;
+      lastAt = now;
+      await prune(db, now);
+      return true;
+    };
+    busy = busy.then(run).catch(() => false);
+    return busy;
+  }
+  async function list() {
+    const db = await open();
+    const rows = await req(db.transaction(STORE).objectStore(STORE).getAll());
+    return rows.map((r) => ({ t: r.t, label: r.label, n: r.n })).sort((a, b) => b.t - a.t);
+  }
+  async function get(t) {
+    const db = await open();
+    const r = await req(db.transaction(STORE).objectStore(STORE).get(t));
+    return r ? r.json : null;
+  }
+  window.TagwerkBackup = { add, list, get };
+})();
+
+</script>
+  <script>
+'use strict';
 // OneDrive-Abgleich: Anmeldung (OAuth-Code-Flow mit PKCE, ohne Geheimnis), Datei im App-Ordner, Zusammenführen pro Element.
 // Läuft nur, wenn die App von einer https-Adresse (oder localhost) geladen wurde.
 (function () {
@@ -2085,10 +2283,13 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     setStatus('busy');
     try {
       let merged = null;
+      let usedFp = null;
       for (let attempt = 0; attempt < 4 && !merged; attempt++) {
         const app = window.TagwerkApp;
         app.stamp();
         const st = app.getState();
+        usedFp = L.fingerprint(st);
+        if (app.backup) app.backup('vor Abgleich');
         const meta = await getMeta();
         let next = st;
         let remoteFp = null;
@@ -2101,12 +2302,13 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
             if (!st.sync.etag && L.isPristine(st)) {
               next = remote; // frisch installiert: Stand der Gegenseite übernehmen
               next.settings = st.settings;
-              next.sync = st.sync;
+              next.sync = Object.assign({}, st.sync); // Kopie: der lebende Stand behält seinen eigenen Merkzettel
               L.rehash(next);
             } else next = L.merge(st, remote);
           } else remoteFp = st.sync.fp;
         }
-        const needUpload = !meta || L.fingerprint(next) !== remoteFp;
+        const nextFp = L.fingerprint(next); // Stand zum Zeitpunkt des Hochladens (spätere Eingaben sind darin nicht enthalten)
+        const needUpload = !meta || nextFp !== remoteFp;
         let etag = meta ? meta.eTag : null;
         if (needUpload) {
           try {
@@ -2119,13 +2321,23 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
           }
         }
         next.sync.etag = etag;
-        next.sync.fp = L.fingerprint(next);
+        next.sync.fp = nextFp;
         next.sync.last = Date.now();
         merged = next;
       }
       if (!merged) throw new Error('Abgleich wegen gleichzeitiger Änderungen abgebrochen, später erneut');
-      if (merged !== window.TagwerkApp.getState()) window.TagwerkApp.setState(merged);
-      else window.TagwerkApp.save();
+      const app = window.TagwerkApp;
+      let live = app.getState();
+      app.stamp();
+      if (merged !== live && L.fingerprint(live) !== usedFp) {
+        // Während des Abgleichs wurde etwas geändert (neue Mitschrift, abgehakte Aufgabe …): mit dem Ergebnis zusammenführen statt es zu verwerfen
+        const result = L.merge(live, merged);
+        result.sync = Object.assign({}, merged.sync, { hashes: result.sync.hashes });
+        merged = result;
+      }
+      live = app.getState();
+      if (merged !== live) app.setState(merged);
+      else app.save();
       setStatus('ok', fmtTime.format(new Date()));
       // Dieses Gerät läuft mit veraltetem Programmcode (Tab/App seit Tagen offen): im Hintergrund neu laden
       if (newerApp && document.hidden && !document.querySelector('dialog[open]')) { newerApp = false; location.reload(); }
@@ -2210,7 +2422,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
 
   async function start() {
     wireDialog();
-    if (hosted && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    if (hosted && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
     if (!hosted) return;
     const back = await handleRedirect();
     if (!configured() || !connected()) { setStatus('off'); return; }
@@ -2246,11 +2458,21 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
 
   let saveTimer = null;
   function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(flush, 150); }
+  let saveWarned = false;
+  function backup(label, force, json) {
+    if (!window.TagwerkBackup) return;
+    try { window.TagwerkBackup.add(json || JSON.stringify(state), label, force); } catch (e) { /* Sicherung ist optional */ }
+  }
   function flush() {
     clearTimeout(saveTimer);
     saveTimer = null;
     L.touch(state, Date.now()); // Änderungszeitpunkte und Löschvermerke für den Abgleich zwischen Geräten
-    const done = storage.save(JSON.stringify(state)).catch((e) => console.error('Speichern fehlgeschlagen', e));
+    const json = JSON.stringify(state);
+    const done = Promise.resolve().then(() => storage.save(json)).catch((e) => {
+      console.error('Speichern fehlgeschlagen', e);
+      if (!saveWarned) { saveWarned = true; toast('Achtung: Die Daten konnten nicht gespeichert werden (Speicher voll oder gesperrt). Bitte unter „Sicherungen“ eine Datei herunterladen.'); }
+    });
+    backup('automatisch', false, json);
     if (window.TagwerkSync) window.TagwerkSync.changed();
     return done;
   }
@@ -2377,14 +2599,16 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   }
 
   function withUndo(message, mutate) {
-    const snapshot = JSON.stringify(state);
+    const before = JSON.parse(JSON.stringify(state));
+    backup('vor ' + message.replace(/\.$/, ''), true);
     mutate();
+    const after = JSON.parse(JSON.stringify(state));
     saveSoon();
     render();
     toast(message, () => {
-      const before = state;
-      state = L.normalize(JSON.parse(snapshot));
-      L.markChanged(state, before, Date.now());
+      // nur zurücknehmen, was diese Aktion verändert hat; alles Spätere (neue Mitschrift, Abgleich …) bleibt erhalten
+      L.revertChanges(state, before, after, Date.now());
+      state = L.normalize(JSON.parse(JSON.stringify(state)));
       if (!projectById(ui.projectId)) ui.projectId = firstActive().id;
       saveSoon();
       render();
@@ -2486,7 +2710,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-10-27 · Aufgaben aus Mitschriften, Teilnehmer sortieren';
+  const BUILD = '2026-11-05 · Datensicherheit, Sicherungen, Projektleiste';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -2589,11 +2813,18 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     // Kleinste Zeilenzahl, bei der die Projekt-Reiter nicht mehr Zeilen brauchen als die festen Reiter haben
     for (let rows = 1; rows <= 4; rows++) {
       tail.style.setProperty('--rows', rows);
-      const need = Math.max(1, Math.round(pt.getBoundingClientRect().height / 28));
+      const rowH = (tail.querySelector('.ptab') || bar).getBoundingClientRect().height || 40;
+      const need = Math.max(1, Math.round(pt.getBoundingClientRect().height / rowH));
       if (need <= rows) break;
     }
   }
   window.addEventListener('resize', fitTail);
+  /** Seitenfenster enden oberhalb der Projektleiste, damit alle Projekte sichtbar und bedienbar bleiben. */
+  function syncTabsHeight() {
+    const bar = document.querySelector('.tabs');
+    if (bar) document.documentElement.style.setProperty('--tabs-h', Math.ceil(bar.getBoundingClientRect().height) + 'px');
+  }
+  window.addEventListener('resize', syncTabsHeight);
 
   function render() {
     const app = $('#app');
@@ -2602,6 +2833,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     app.dataset.view = ui.mode;
     app.replaceChildren(topBar(), ui.view === 'month' ? monthArea() : weekArea(), band(), listsArea(), tabsBar());
     fitTail();
+    syncTabsHeight();
     if (isMobile()) { const act = document.querySelector('.tabs [aria-current="page"]'); if (act) act.scrollIntoView({ inline: 'center', block: 'nearest' }); }
     [...app.querySelectorAll('.days, .mgrid, .lists')].forEach((el, i) => { if (scrolls[i]) el.scrollTop = scrolls[i]; });
     if (ui.mTarget) applyMonthTarget(false);
@@ -2680,6 +2912,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       ibtn('search', 'Suchen (/)', openSearch),
       ibtn('sliders', 'Einstellungen', openPrefs),
       ibtn('sync', 'Datensicherung', (e) => showMenu(e.currentTarget, [
+        { label: 'Sicherungen / Wiederherstellung …', run: openBackups },
         { label: 'Daten sichern (Download)', run: exportData },
         { label: 'Sicherung laden …', run: () => $('#import-file').click() },
       ])),
@@ -3448,8 +3681,9 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     const tabs = activeProjects().map((p) => {
       const active = !ui.showDone && !ui.showArchive && !ui.showTrash && !ui.showOverview && p.id === curProject().id;
       const count = L.openCountForProject(state, p.id);
-      const el = h('div', { class: 'ptab', 'aria-current': active ? 'page' : null },
-        h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.projectId = p.id; ui.showDone = false; ui.showArchive = false; ui.showTrash = false; ui.showOverview = false; ui.page = 0; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, p.name, ' ', h('span', { class: 'count' }, count)));
+      const el = h('div', { class: 'ptab proj' + (p.internal ? ' internal' : ''), 'aria-current': active ? 'page' : null, title: p.internal ? 'Internes Projekt' : null },
+        h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.projectId = p.id; ui.showDone = false; ui.showArchive = false; ui.showTrash = false; ui.showOverview = false; ui.page = 0; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, p.name, ' ', p.internal ? h('span', { class: 'ibadge' }, 'intern') : null, h('span', { class: 'count' }, count)));
+      el.style.setProperty('--pc', p.color || '#8f8f8f');
       // Reiter per Ziehen umsortieren
       el.setAttribute('draggable', 'true');
       el.addEventListener('dragstart', (e) => {
@@ -3583,6 +3817,27 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   const minBody = q('#min-body');
   let minCtx = null;
   let minDirty = false;
+  // Entwurf: Jede Eingabe landet sofort in einem eigenen Speicher; geht die Seite verloren (iOS beendet Apps im Hintergrund), kommt der Text beim nächsten Start zurück.
+  const DRAFT_KEY = 'tagwerk-entwurf-mitschrift';
+  let draftTimer = null;
+  function draftNow() {
+    clearTimeout(draftTimer);
+    if (!minCtx || !minDirty) return;
+    const body = minBody.value;
+    const title = q('#min-title').value;
+    if (!body.trim() && !title.trim()) return;
+    const cur = minCtx.id ? state.minutes.find((x) => x.id === minCtx.id) : null;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        id: minCtx.id, projectId: minCtx.projectId, title, date: q('#min-date').value, start: q('#min-start').value, end: q('#min-end').value,
+        participants: readPeople(), body, at: Date.now(), base: cur ? cur.updatedAt || 0 : 0,
+      }));
+    } catch (e) { /* Speicher gesperrt */ }
+  }
+  const draftSoon = () => { clearTimeout(draftTimer); draftTimer = setTimeout(draftNow, 400); };
+  const draftClear = () => { clearTimeout(draftTimer); try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignorieren */ } };
+  window.addEventListener('pagehide', draftNow);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) draftNow(); });
 
   /** Zeigt formatierten Text (Überschriften, Listen, fett, kursiv, Links) als DOM. */
   function blocksView(text) {
@@ -3686,10 +3941,10 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   const readPeople = () => L.cleanPeople([...peopleBox.children].map((r) => ({ name: r.querySelector('.pname').value, org: r.querySelector('.porg').value })));
   q('#min-people-add').addEventListener('click', () => addPerson(true));
 
-  function openMinuteIn(id, side) {
+  function openMinuteIn(id, side, draft) {
     const m = id ? state.minutes.find((x) => x.id === id) : null;
     if (id && !m) return;
-    minCtx = { id: id || null, projectId: m ? m.projectId : curProject().id };
+    minCtx = { id: id || null, projectId: m ? m.projectId : (draft && projectById(draft.projectId) ? draft.projectId : curProject().id) };
     q('#min-heading').textContent = m ? 'Mitschrift' : 'Neue Mitschrift';
     const now = new Date();
     q('#min-title').value = m ? m.title : '';
@@ -3701,18 +3956,28 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     q('#min-delete').hidden = !m;
     minDirty = false;
     minSetPreview(!!m && !!m.body);
+    if (draft) {
+      q('#min-title').value = draft.title || '';
+      q('#min-date').value = draft.date || today;
+      q('#min-start').value = draft.start || '';
+      q('#min-end').value = draft.end || '';
+      fillPeople(draft.participants || []);
+      minBody.value = draft.body || '';
+      minDirty = true;
+      minSetPreview(false);
+    }
     openDrawer(minDlg, side);
-    if (!m) q('#min-title').focus();
+    if (!m && !draft) q('#min-title').focus();
   }
-  minDlg.addEventListener('input', () => { minDirty = true; });
+  minDlg.addEventListener('input', () => { minDirty = true; draftSoon(); });
   q('#min-mode-edit').addEventListener('click', () => { minSetPreview(false); minBody.focus(); });
   q('#min-mode-view').addEventListener('click', () => minSetPreview(true));
   q('#min-preview').addEventListener('dblclick', () => { minSetPreview(false); minBody.focus(); });
-  const minClose = () => { minDlg.close(); minCtx = null; };
+  const minClose = () => { minDlg.close(); minCtx = null; minDirty = false; draftClear(); };
   minDlg.addEventListener('cancel', (e) => {
     if (minDirty && !window.confirm('Änderungen an der Mitschrift verwerfen?')) e.preventDefault();
   });
-  minDlg.addEventListener('close', () => { if (!minDlg.open) minCtx = null; });
+  minDlg.addEventListener('close', () => { if (!minDlg.open) { minCtx = null; minDirty = false; draftClear(); } });
   q('#min-cancel').addEventListener('click', () => {
     if (minDirty && !window.confirm('Änderungen an der Mitschrift verwerfen?')) return;
     minClose();
@@ -3733,6 +3998,7 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     minDirty = false;
     minClose();
     render();
+    backup('Mitschrift gespeichert', true);
   });
   q('#min-delete').addEventListener('click', () => {
     const id = minCtx && minCtx.id;
@@ -3896,12 +4162,24 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
   document.body.append(minDlg2);
   const minB = setupMinute(minDlg2);
   wireDrawer(minDlg2);
-  function openMinute(id) {
+  function openMinute(id, draft) {
     const m = id ? state.minutes.find((x) => x.id === id) : null;
     if (id && !m) return;
     const inst = minA.dlg.open ? minB : minA;
     const side = placeDrawer(inst.dlg);
-    inst.open(id, side);
+    inst.open(id, side, draft);
+  }
+  /** Beim Start: einen nicht gespeicherten Mitschrift-Entwurf wieder öffnen. */
+  function restoreMinuteDraft() {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem('tagwerk-entwurf-mitschrift')); } catch (e) { d = null; }
+    if (!d || typeof d !== 'object' || Date.now() - (d.at || 0) > 14 * 86400000) return false;
+    const cur = d.id ? state.minutes.find((x) => x.id === d.id) : null;
+    if (d.id && !cur) { d.id = null; } // Mitschrift inzwischen weg: als neue anlegen
+    if (cur && cur.body === d.body && cur.title === d.title) { try { localStorage.removeItem('tagwerk-entwurf-mitschrift'); } catch (e) { /* egal */ } return false; }
+    openMinute(d.id, d);
+    toast('Nicht gespeicherte Mitschrift wiederhergestellt – bitte prüfen und speichern.');
+    return true;
   }
 
   // ---------- Kontextmenü ----------
@@ -4337,6 +4615,59 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     }
   });
 
+  // ---------- Sicherungen und Wiederherstellung ----------
+  const fmtSnap = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const missingText = (m) => [m.minutes && m.minutes + (m.minutes === 1 ? ' Mitschrift' : ' Mitschriften'), m.todos && m.todos + (m.todos === 1 ? ' Aufgabe' : ' Aufgaben'), m.projects && m.projects + (m.projects === 1 ? ' Projekt' : ' Projekte'), (m.lists || m.recurs) && ((m.lists || 0) + (m.recurs || 0)) + ' Listen/Regeln'].filter(Boolean).join(', ');
+  /** Holt aus einem älteren Stand zurück, was jetzt fehlt – ohne etwas zu überschreiben. */
+  function restoreFrom(oldRaw, what) {
+    let old;
+    try { old = L.normalize(typeof oldRaw === 'string' ? JSON.parse(oldRaw) : oldRaw); } catch (e) { toast('Die Sicherung konnte nicht gelesen werden.'); return; }
+    const miss = L.restoreMissing(state, old, Date.now(), false);
+    const txt = missingText(miss);
+    if (!txt) { toast('Es fehlt nichts: Alles aus dieser Sicherung ist schon vorhanden.'); return; }
+    if (!window.confirm('Aus ' + what + ' zurückholen: ' + txt + '?\nVorhandenes wird nicht verändert.')) return;
+    backup('vor Wiederherstellung', true);
+    L.restoreMissing(state, old, Date.now(), true);
+    state = L.normalize(JSON.parse(JSON.stringify(state)));
+    saveSoon();
+    render();
+    drawBackups();
+    toast('Zurückgeholt: ' + txt + '.');
+  }
+  async function drawBackups() {
+    const ul = $('#backup-list');
+    if (!window.TagwerkBackup) { ul.replaceChildren(h('li', { class: 'hint' }, 'Automatische Sicherungen sind in diesem Browser nicht verfügbar.')); return; }
+    let rows = [];
+    try { rows = await window.TagwerkBackup.list(); } catch (e) { /* leer */ }
+    if (!rows.length) { ul.replaceChildren(h('li', { class: 'hint' }, 'Noch keine Sicherung vorhanden.')); return; }
+    const out = [];
+    for (const r of rows.slice(0, 60)) {
+      let miss = null;
+      try { miss = L.restoreMissing(state, L.normalize(JSON.parse(await window.TagwerkBackup.get(r.t))), 0, false); } catch (e) { /* ohne Vergleich */ }
+      const txt = miss ? missingText(miss) : '';
+      out.push(h('li', { class: 'brow' + (txt ? ' has-missing' : '') },
+        h('div', { class: 'bmain' },
+          h('strong', {}, fmtSnap.format(new Date(r.t))), ' ', h('span', { class: 'bmeta' }, r.label),
+          h('div', { class: 'bmeta' }, r.n.projects + ' Projekte · ' + r.n.todos + ' Aufgaben · ' + r.n.minutes + ' Mitschriften'),
+          txt ? h('div', { class: 'bmiss' }, 'Fehlt jetzt: ' + txt) : null),
+        txt ? h('button', { type: 'button', onclick: async () => restoreFrom(await window.TagwerkBackup.get(r.t), 'der Sicherung vom ' + fmtSnap.format(new Date(r.t))) }, 'Fehlendes zurückholen') : null));
+    }
+    ul.replaceChildren(...out);
+  }
+  function openBackups() {
+    placeDrawer($('#backup-dialog'), true);
+    openDrawer($('#backup-dialog'), 'right');
+    drawBackups();
+  }
+  $('#backup-export').addEventListener('click', exportData);
+  $('#backup-file').addEventListener('click', () => $('#restore-file').click());
+  $('#restore-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try { restoreFrom(await file.text(), 'der Datei „' + file.name + '“'); } catch (err) { toast('Die Datei konnte nicht gelesen werden.'); }
+  });
+
   // ---------- Tageswechsel, Tastatur ----------
   function checkNewDay(announce) {
     const now = L.todayISO();
@@ -4396,9 +4727,11 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
       if (!document.querySelector('dialog[open]') && !(document.activeElement && document.activeElement.tagName === 'INPUT')) render();
     },
     stamp() { L.touch(state, Date.now()); },
+    backup: (label, force) => backup(label, force),
     save: flush,
     toast,
     openPrefs,
+    openBackups,
   };
 
   // ---------- Start ----------
@@ -4406,7 +4739,11 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     let loadError = false;
     try {
       const raw = await storage.load();
-      state = L.normalize(raw ? JSON.parse(raw) : null);
+      try { state = L.normalize(raw ? JSON.parse(raw) : null); } catch (e) {
+        // Unlesbare Daten nie überschreiben: erst als eigene Kopie ablegen
+        if (!window.api && raw) { try { localStorage.setItem('tagwerk-unlesbar-' + Date.now(), raw); } catch (e2) { /* voll */ } }
+        throw e;
+      }
     } catch (e) {
       console.error('Daten konnten nicht gelesen werden', e);
       state = L.normalize(null);
@@ -4421,7 +4758,8 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
     saveSoon();
     render();
     if (window.TagwerkSync) window.TagwerkSync.start();
-    if (loadError) toast('Die gespeicherten Daten waren nicht lesbar. Eine Sicherung liegt als „daten.json.bak“ im Datenordner.');
+    try { restoreMinuteDraft(); } catch (e) { console.error(e); }
+    if (loadError) toast('Die gespeicherten Daten waren nicht lesbar. Eine Kopie wurde aufgehoben; unter „Sicherungen“ lässt sich ein früherer Stand zurückholen.');
     else if (moved) toast(moved === 1 ? '1 offene Aufgabe auf heute verschoben.' : moved + ' offene Aufgaben auf heute verschoben.');
   })();
 })();
