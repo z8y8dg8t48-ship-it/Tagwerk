@@ -693,6 +693,12 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
 dialog.drawer, dialog.drawer.detail, dialog.drawer.minute { bottom: var(--tabs-h, 0px); height: auto; }
 dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--bg); padding: 10px 0 8px; margin-top: 8px; border-top: 1px solid var(--line); z-index: 2; }
 
+/* Listen verschieben (Reihenfolge-Modus): Pfeile, auch über Seiten hinweg */
+.list-head .lmove { position: absolute; right: 0; top: 4px; display: flex; gap: 2px; }
+.list-head .lmv { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 18px; line-height: 24px; padding: 0; }
+.list-head .lmv:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.list-head .lmv:disabled { opacity: 0.3; }
+
 </style>
 </head>
 <body>
@@ -906,6 +912,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
         <li><b>Aufgaben aus Mitschriften</b>: Text oder Zeilen markieren und auf „→ Aufgabe“ klicken (oder Strg+Umschalt+A); ohne Markierung wird die aktuelle Zeile genommen. Der Text bleibt, die Zeile bekommt eine Marke ⟦T:…⟧ und erscheint in „Lesen“ als anklickbares „→ Aufgabe“ bzw. „✓ Aufgabe“. Teilnehmer lassen sich am Griff per Drag &amp; Drop sortieren; die Reihenfolge gilt auch in „Lesen“</li>
         <li><b>Datensicherheit</b>: Tagwerk legt auf jedem Gerät automatisch Sicherungen an (Symbol oben links mit den zwei Pfeilen → „Sicherungen / Wiederherstellung“). Fehlt etwas, zeigt die Liste „Fehlt jetzt: …“, ein Klick holt es zurück, ohne Vorhandenes zu überschreiben. Auch eine alte Datei (z. B. frühere OneDrive-Version von tagwerk.json) lässt sich so einlesen. Nicht gespeicherte Mitschriften kommen nach einem Neustart als Entwurf zurück</li>
+        <li><b>Listen anordnen</b>: Im Projekt auf das Reihenfolge-Symbol klicken. Dann verschieben die Pfeile ‹ › an jeder Liste sie um eine Stelle, auch über Seitengrenzen; per Ziehen blättert die Ansicht weiter, wenn man am Rand oder auf den Seitenpfeilen kurz verweilt (gilt auch für Aufgaben)</li>
         <li><b>Projektleiste</b> unten: normale Projekte haben einen farbigen Balken, <b>interne</b> sind schraffiert, kursiv und mit „intern“ gekennzeichnet. Seitenfenster enden oberhalb der Leiste, alle Projekte bleiben erreichbar</li>
         <li><b>Projekt-Aktionen</b> (Seite öffnen, Umbenennen / Farbe, Archivieren, Löschen) liegen als Symbole rechts in der farbigen Leiste. Gelöschte Projekte liegen im <b>Papierkorb</b> und lassen sich zurückholen. Fenster wie Aufgabe oder Mitschrift schieben von rechts herein; links bleibt alles bedienbar</li>
         <li><b>Übersicht</b> (Reiter unten rechts): ein Kachel-Raster mit dem Sachstand aller (nicht internen) Projekte – Name, Kürzel, Ampel, Text, Stand-Datum und Zahl offener Aufgaben; ein Klick öffnet das Projekt</li>
@@ -2710,7 +2717,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-11-05 · Datensicherheit, Sicherungen, Projektleiste';
+  const BUILD = '2026-11-05 · Datensicherheit, Projektleiste, Listen seitenübergreifend';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -3233,6 +3240,34 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     });
   }
 
+  // ---------- Seitenwechsel beim Ziehen ----------
+  // Wer eine Liste oder Aufgabe zieht, kann sie auf eine andere Seite des Projekts mitnehmen: kurz am Rand der Spalten
+  // oder auf den Seitenpfeilen verweilen, dann blättert die Ansicht weiter.
+  let flipTimer = null;
+  let flipDir = 0;
+  function clearFlip() { clearTimeout(flipTimer); flipTimer = null; flipDir = 0; }
+  function armFlip(dir, delay) {
+    if (!drag || (drag.kind !== 'list' && drag.kind !== 'todo') || !dir) { clearFlip(); return; }
+    if (flipDir === dir && flipTimer) return;
+    clearFlip();
+    flipDir = dir;
+    flipTimer = setTimeout(() => {
+      flipTimer = null; flipDir = 0;
+      const { pages } = pageInfo();
+      const next = Math.max(0, Math.min(pages - 1, ui.page + dir));
+      if (next === ui.page) return;
+      ui.page = next;
+      render();
+    }, delay || 650);
+  }
+  function flipTarget(btn, dir) {
+    btn.addEventListener('dragover', (e) => { if (drag && (drag.kind === 'list' || drag.kind === 'todo')) { e.preventDefault(); armFlip(dir, 350); } });
+    btn.addEventListener('dragleave', clearFlip);
+    return btn;
+  }
+  document.addEventListener('dragend', clearFlip);
+  document.addEventListener('drop', clearFlip, true);
+
   // ---------- Band und Listen ----------
   function pageInfo() {
     const lists = L.listsOf(state, curProject().id);
@@ -3270,9 +3305,9 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
       } })));
     // Am Desktop: Seitenwechsel über Pfeile rechts in der Leiste (nur, wenn es mehr als eine Seite gibt)
     const pager = isMobile() || pages < 2 ? [] : [
-      h('button', { type: 'button', class: 'ibtn', title: 'Vorherige Spalten', 'aria-label': 'Vorherige Spalten', disabled: ui.page === 0 ? true : null, onclick: () => { ui.page = Math.max(0, ui.page - 1); render(); } }, icon('chev-l')),
+      flipTarget(h('button', { type: 'button', class: 'ibtn', title: 'Vorherige Spalten', 'aria-label': 'Vorherige Spalten', disabled: ui.page === 0 ? true : null, onclick: () => { ui.page = Math.max(0, ui.page - 1); render(); } }, icon('chev-l')), -1),
       h('span', { class: 'pageno', 'aria-live': 'polite' }, (ui.page + 1) + '/' + pages),
-      h('button', { type: 'button', class: 'ibtn', title: 'Weitere Spalten', 'aria-label': 'Weitere Spalten', disabled: ui.page >= pages - 1 ? true : null, onclick: () => { ui.page = Math.min(pages - 1, ui.page + 1); render(); } }, icon('chev-r')),
+      flipTarget(h('button', { type: 'button', class: 'ibtn', title: 'Weitere Spalten', 'aria-label': 'Weitere Spalten', disabled: ui.page >= pages - 1 ? true : null, onclick: () => { ui.page = Math.min(pages - 1, ui.page + 1); render(); } }, icon('chev-r')), 1),
     ];
     const el = h('div', { class: 'band colored' },
       h('div', { class: 'left' }, ui.mode === 'max' ? null : ibtn(ui.mode === 'closed' ? 'chev-u' : 'chev-d', ui.mode === 'closed' ? 'Listen einblenden' : 'Listen ausblenden', () => {
@@ -3329,6 +3364,12 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     visible.forEach((l) => cols.push(l.minutes ? minutesColumn(p) : l.sachstand ? sachstandColumn(p) : l.planned ? plannedColumn(p) : listColumn(l)));
     const section = h('section', { class: 'lists', 'aria-label': 'Listen von ' + p.name }, cols);
     section.style.setProperty('--cols', String(per));
+    section.addEventListener('dragover', (e) => {
+      if (!drag || (drag.kind !== 'list' && drag.kind !== 'todo')) return;
+      const r = section.getBoundingClientRect();
+      const edge = Math.min(90, r.width * 0.1);
+      armFlip(e.clientX < r.left + edge ? -1 : e.clientX > r.right - edge ? 1 : 0);
+    });
     if (isMobile()) {
       // Wischen: ein Fenster pro Spalte; Punkte im Band folgen der Position, Position bleibt beim Neuzeichnen erhalten
       const place = () => { section.scrollLeft = Math.min(ui.mcol || 0, cols.length - 1) * section.clientWidth; };
@@ -3627,8 +3668,12 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
         ? h('h3', { class: 'frist-title', title: 'Fristen: stehen rot im Kalender, wandern nicht mit und mahnen, bis sie erledigt sind' }, l.name)
         : h('h3', { title: 'Doppelklick zum Umbenennen', ondblclick: () => { ui.renamingList = l.id; ui.focus = 'rename'; render(); } }, l.name);
     }
+    const customs = L.listsOf(state, l.projectId).filter((x) => !x.deadline);
+    const ci = customs.findIndex((x) => x.id === l.id);
+    const mv = (dir, label, glyph) => h('button', { type: 'button', class: 'lmv', title: label, 'aria-label': label, disabled: ci + dir < 0 || ci + dir >= customs.length ? true : null, onclick: () => moveListBy(l, dir) }, glyph);
     const head = h('div', { class: 'list-head' + (ui.reorder ? ' draggable' : '') },
       ui.reorder && !l.deadline ? h('button', { type: 'button', class: 'x', title: 'Liste löschen', 'aria-label': 'Liste löschen', onclick: () => deleteList(l) }, '×') : null,
+      ui.reorder && !l.deadline ? h('span', { class: 'lmove' }, mv(-1, 'Liste nach links (auch auf die vorige Seite)', '‹'), mv(1, 'Liste nach rechts (auch auf die nächste Seite)', '›')) : null,
       headContent);
     const col = h('section', { class: 'list-col', 'data-list': l.id }, head, items, fillArea('list-' + l.id, true, (raw) => addTodo(raw, { listId: l.id })));
 
@@ -3674,6 +3719,19 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
       });
     }
     return col;
+  }
+
+  /** Verschiebt eine Liste um eine Stelle (über Seitengrenzen hinweg); die Ansicht folgt der Liste. */
+  function moveListBy(l, dir) {
+    const lists = L.listsOf(state, l.projectId);
+    const customs = lists.filter((x) => !x.deadline);
+    const ci = customs.findIndex((x) => x.id === l.id);
+    if (ci < 0 || ci + dir < 0 || ci + dir >= customs.length) return;
+    L.reorderLists(state, l.id, (lists.some((x) => x.deadline) ? 1 : 0) + ci + dir);
+    saveSoon();
+    const e = pageInfo().entries.findIndex((x) => x.id === l.id);
+    if (e >= 0) ui.page = Math.floor(e / perPage());
+    render();
   }
 
   // ---------- Projekt-Tabs ----------
