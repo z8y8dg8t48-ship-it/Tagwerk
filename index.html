@@ -757,6 +757,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
       <label>Name<input id="project-name" type="text" required maxlength="40" autocomplete="off"></label>
       <label>Kürzel (Pflicht, max. 10 Zeichen)<input id="project-code" type="text" required maxlength="10" autocomplete="off" spellcheck="false" placeholder="z. B. NEU"></label>
       <label class="check-row"><input id="project-internal" type="checkbox"> Interne Aufgaben (EDV, Außenauftritt, Besprechungen …) – stehen am Tag unter den übrigen</label>
+      <label class="check-row"><input id="project-overview" type="checkbox" checked> In der Übersicht (Sachstände) anzeigen – „Sonstige …“ standardmäßig nicht</label>
       <fieldset>
         <legend>Farbe</legend>
         <div id="project-colors" class="swatches"></div>
@@ -913,7 +914,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
         <li><b>Aufgaben aus Mitschriften</b>: Text oder Zeilen markieren und auf „→ Aufgabe“ klicken (oder Strg+Umschalt+A); ohne Markierung wird die aktuelle Zeile genommen. Der Text bleibt, die Zeile bekommt eine Marke ⟦T:…⟧ und erscheint in „Lesen“ als anklickbares „→ Aufgabe“ bzw. „✓ Aufgabe“. Teilnehmer lassen sich am Griff per Drag &amp; Drop sortieren; die Reihenfolge gilt auch in „Lesen“</li>
         <li><b>Datensicherheit</b>: Tagwerk legt auf jedem Gerät automatisch Sicherungen an (Symbol oben links mit den zwei Pfeilen → „Sicherungen / Wiederherstellung“). Fehlt etwas, zeigt die Liste „Fehlt jetzt: …“, ein Klick holt es zurück, ohne Vorhandenes zu überschreiben. Auch eine alte Datei (z. B. frühere OneDrive-Version von tagwerk.json) lässt sich so einlesen. Nicht gespeicherte Mitschriften kommen nach einem Neustart als Entwurf zurück</li>
         <li><b>Listen anordnen</b>: Im Projekt auf das Reihenfolge-Symbol klicken. Dann verschieben die Pfeile ‹ › an jeder Liste sie um eine Stelle, auch über Seitengrenzen; per Ziehen blättert die Ansicht weiter, wenn man am Rand oder auf den Seitenpfeilen kurz verweilt (gilt auch für Aufgaben)</li>
-        <li><b>Projektleiste</b> unten: normale Projekte haben einen farbigen Balken, <b>interne</b> sind schraffiert, kursiv und mit „intern“ gekennzeichnet. Seitenfenster enden oberhalb der Leiste, alle Projekte bleiben erreichbar</li>
+        <li><b>Projektleiste</b> unten: normale Projekte haben einen farbigen Balken, <b>interne</b> sind schraffiert und kursiv. Seitenfenster enden oberhalb der Leiste, alle Projekte bleiben erreichbar</li>
         <li><b>Projekt-Aktionen</b> (Seite öffnen, Umbenennen / Farbe, Archivieren, Löschen) liegen als Symbole rechts in der farbigen Leiste. Gelöschte Projekte liegen im <b>Papierkorb</b> und lassen sich zurückholen. Fenster wie Aufgabe oder Mitschrift schieben von rechts herein; links bleibt alles bedienbar</li>
         <li><b>Übersicht</b> (Reiter unten rechts): ein Kachel-Raster mit dem Sachstand aller (nicht internen) Projekte – Name, Kürzel, Ampel, Text, Stand-Datum und Zahl offener Aufgaben; ein Klick öffnet das Projekt</li>
         <li><b>Archiv</b>: Projekte über das Symbol in der Leiste archivieren; sie verschwinden aus Kalender und Suche, bleiben im Reiter <b>Archiv</b> durchsuchbar und lassen sich wiederherstellen. Die Spalte <b>Sachstand</b> hält den aktuellen Stand je Projekt in wenigen Worten fest</li>
@@ -3434,9 +3435,12 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
 
   // ---------- Übersicht: Sachstände aller Projekte ----------
   const LEVEL_TEXT = { ok: 'läuft', warn: 'Achtung', bad: 'kritisch' };
+  /** Erscheint das Projekt in der Übersicht? Intern: nein. „Sonstige …“: standardmäßig nein. Sonst nach Haken im Projektfenster. */
+  const overviewDefault = (name) => !/^sonstig/i.test(String(name || '').trim());
+  const inOverview = (p) => !p.internal && (typeof p.overview === 'boolean' ? p.overview : overviewDefault(p.name));
   function overviewArea() {
     const root = h('section', { class: 'lists overview-view', 'aria-label': 'Sachstände aller Projekte' });
-    const ps = activeProjects().filter((p) => !p.internal);
+    const ps = activeProjects().filter(inOverview);
     const grid = h('div', { class: 'ovgrid' }, ps.map((p) => {
       const open = L.openCountForProject(state, p.id);
       const card = h('div', { class: 'ovcard' + (p.statusLevel ? ' ov-' + p.statusLevel : ''), role: 'button', tabindex: '0', title: 'Projekt öffnen',
@@ -3740,7 +3744,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
       const active = !ui.showDone && !ui.showArchive && !ui.showTrash && !ui.showOverview && p.id === curProject().id;
       const count = L.openCountForProject(state, p.id);
       const el = h('div', { class: 'ptab proj' + (p.internal ? ' internal' : ''), 'aria-current': active ? 'page' : null, title: p.internal ? 'Internes Projekt' : null },
-        h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.projectId = p.id; ui.showDone = false; ui.showArchive = false; ui.showTrash = false; ui.showOverview = false; ui.page = 0; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, p.name, ' ', p.internal ? h('span', { class: 'ibadge' }, 'intern') : null, h('span', { class: 'count' }, count)));
+        h('button', { type: 'button', class: 'tabmain', onclick: () => { ui.projectId = p.id; ui.showDone = false; ui.showArchive = false; ui.showTrash = false; ui.showOverview = false; ui.page = 0; ui.reorder = false; if (ui.mode === 'closed') ui.mode = 'open'; render(); } }, p.name, ' ', h('span', { class: 'count' }, count)));
       el.style.setProperty('--pc', p.color || '#8f8f8f');
       // Reiter per Ziehen umsortieren
       el.setAttribute('draggable', 'true');
@@ -4492,6 +4496,13 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     }));
   }
   function drawProjectSwatches() { swatches($('#project-colors'), PROJECT_COLORS, pickedColor, (c) => { pickedColor = c; drawProjectSwatches(); }); }
+  let ovTouched = false;
+  $('#project-overview').addEventListener('change', () => { ovTouched = true; });
+  /** Übernimmt den Haken „In der Übersicht anzeigen“ nur dann dauerhaft, wenn er vom Standard abweicht oder geändert wurde. */
+  function setOverviewFlag(p) {
+    const want = ovTouched ? $('#project-overview').checked : (typeof p.overview === 'boolean' ? p.overview : overviewDefault(p.name));
+    if (want === overviewDefault(p.name)) delete p.overview; else p.overview = want;
+  }
   function openProjectDialog(id) {
     placeDrawer(projDlg, true);
     projectEditId = id || null;
@@ -4501,6 +4512,8 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     $('#project-code').value = p ? p.code : '';
     codeTouched = !!p;
     $('#project-internal').checked = !!(p && p.internal);
+    $('#project-overview').checked = p ? inOverview(p) : true;
+    ovTouched = false;
     $('#project-name').setCustomValidity('');
     pickedColor = p ? p.color : PROJECT_COLORS[state.projects.length % PROJECT_COLORS.length];
     drawProjectSwatches();
@@ -4530,9 +4543,11 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
       p.code = code;
       p.color = pickedColor;
       if ($('#project-internal').checked) p.internal = true; else delete p.internal;
+      setOverviewFlag(p);
     } else {
       const p = { id: L.uid(), name, code, color: pickedColor, order: state.projects.length + 1 };
       if ($('#project-internal').checked) p.internal = true;
+      setOverviewFlag(p);
       state.projects.push(p);
       state.lists.push({ id: L.uid(), projectId: p.id, name: 'Aufgaben', order: 1 });
       L.ensureDeadlineLists(state);
