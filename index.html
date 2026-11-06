@@ -650,10 +650,10 @@ dialog.drawer.left.slide-in { animation-name: drawer-in-left; }
 }
 @media (max-width: 700px) {
   .bar { display: flex; flex-wrap: wrap; align-items: center; height: auto; padding: 2px 6px 4px; row-gap: 2px; }
-  .bar-left { order: 1; flex: 1; justify-content: space-between; max-width: 190px; }
+  .bar-left { order: 1; flex: 1; justify-content: space-between; max-width: 230px; }
   .bar .brand { order: 2; margin-left: auto; }
-  .bar-right { order: 3; flex: 1 0 100%; justify-content: space-between; gap: 8px; }
-  .bar-right .seg { flex: 1; margin: 0; }
+  .bar-right { order: 3; flex: 1 0 100%; min-width: 0; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; }
+  .bar-right .seg { flex: 1 1 150px; margin: 0; }
   .bar-right .seg button { flex: 1; line-height: 32px; font-size: 11px; padding: 0 6px; white-space: nowrap; }
 }
 
@@ -711,6 +711,16 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
 .mdel { flex: none; background: none; border: 0; font-size: 20px; line-height: 1; padding: 6px 8px; cursor: pointer; color: inherit; opacity: .6; }
 .mdel:hover { opacity: 1; }
 #mail-text { width: 100%; box-sizing: border-box; }
+#mail-project.need { outline: 2px solid #d33; }
+
+/* Titel als Textfeld, großer +-Button */
+dialog input.title-input[type="text"] { display: block; width: 100%; box-sizing: border-box; margin: 0 0 14px; padding: 2px 0 6px; border: 0; border-bottom: 2px solid var(--line); border-radius: 0; background: transparent; color: var(--text); font: 400 28px/32px var(--head); text-transform: none; letter-spacing: 0.01em; }
+dialog input.title-input:focus { outline: none; border-bottom-color: var(--accent, #d33); }
+.title-input::placeholder { color: var(--muted); opacity: .6; }
+.fab { position: fixed; z-index: 30; right: 18px; bottom: calc(var(--tabs-h, 40px) + 18px + env(safe-area-inset-bottom, 0px)); width: 60px; height: 60px; border-radius: 50%; border: 0; background: var(--accent, #d33); color: #fff; font: 300 38px/1 var(--head, sans-serif); box-shadow: 0 4px 14px rgba(0,0,0,.3); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 0 4px; }
+.fab:active { transform: scale(.94); }
+body:has(dialog[open]) .fab { display: none; }
+@media (max-width: 700px) { .fab { right: 14px; width: 64px; height: 64px; } }
 
 </style>
 </head>
@@ -722,8 +732,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
 
   <dialog id="edit-dialog" class="detail drawer">
     <form method="dialog" id="edit-form">
-      <h2 id="edit-title">Aufgabe</h2>
-      <label>Text<input id="edit-text" type="text" required maxlength="500" autocomplete="off"></label>
+      <input id="edit-text" class="title-input" type="text" required maxlength="500" autocomplete="off" aria-label="Aufgabe" placeholder="Aufgabe …">
       <div class="row2">
         <label id="edit-date-wrap">Datum<input id="edit-date" type="date"></label>
         <label id="edit-list-wrap">Projekt<select id="edit-project"></select></label>
@@ -733,14 +742,14 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
         <label class="check-row" id="edit-frist-wrap"><input id="edit-frist" type="checkbox"> Frist</label>
       </div>
       <p class="hint" id="edit-where"></p>
-      <label>Notizen
-        <textarea id="edit-notes" rows="4" maxlength="20000" placeholder="Notizen, Details, Links …"></textarea>
-      </label>
       <fieldset class="subs">
         <legend>Unteraufgaben <span id="subs-count"></span></legend>
         <ul id="edit-subs" class="sublist"></ul>
         <input id="edit-sub-new" type="text" maxlength="500" autocomplete="off" placeholder="Unteraufgabe hinzufügen …" aria-label="Neue Unteraufgabe">
       </fieldset>
+      <label>Notizen
+        <textarea id="edit-notes" rows="4" maxlength="20000" placeholder="Notizen, Details, Links …"></textarea>
+      </label>
       <div class="row2">
         <label>Wiederholen
           <select id="edit-freq">
@@ -890,6 +899,8 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     </form>
   </dialog>
 
+  <button type="button" id="fab" class="fab" title="Neue Aufgabe" aria-label="Neue Aufgabe">+</button>
+
   <dialog id="mail-dialog" class="drawer">
     <form method="dialog" id="mail-form">
       <h2>E-Mail → Aufgaben</h2>
@@ -941,6 +952,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
         <li><b>Aufgaben aus Mitschriften</b>: Text oder Zeilen markieren und auf „→ Aufgabe“ klicken (oder Strg+Umschalt+A); ohne Markierung wird die aktuelle Zeile genommen. Der Text bleibt, die Zeile bekommt eine Marke ⟦T:…⟧ und erscheint in „Lesen“ als anklickbares „→ Aufgabe“ bzw. „✓ Aufgabe“. Teilnehmer lassen sich am Griff per Drag &amp; Drop sortieren; die Reihenfolge gilt auch in „Lesen“</li>
+        <li><b>Neue Aufgabe (+)</b>: Der runde +-Button unten rechts öffnet die Seitenleiste mit allen Feldern (Titel, Projekt, Datum, Frist, Unteraufgaben, Notizen, Wiederholen). Wird der Titel leer gelassen, entsteht keine Aufgabe. Ein zweiter Klick auf dieselbe Aufgabe schließt ihre Seitenleiste wieder. Tagwerk merkt sich pro Gerät das zuletzt gewählte Projekt; auf dem Handy lässt sich endlos durch die Tage wischen</li>
         <li><b>E-Mail → Aufgaben</b>: Mail-Symbol oben links → Projekt wählen, E-Mail-Text einfügen. Tagwerk schlägt Fristen („bis zum …“), Aufgaben mit Datum und Aufgaben ohne Datum vor (Regelerkennung, keine KI – bitte prüfen). Bitten an die Gegenseite sind als „Nachfassen“ vorgeschlagen, aber nicht angehakt. Jede Zeile ist änderbar</li>
         <li><b>Datensicherheit</b>: Tagwerk legt auf jedem Gerät automatisch Sicherungen an (Symbol oben links mit den zwei Pfeilen → „Sicherungen / Wiederherstellung“). Fehlt etwas, zeigt die Liste „Fehlt jetzt: …“, ein Klick holt es zurück, ohne Vorhandenes zu überschreiben. Auch eine alte Datei (z. B. frühere OneDrive-Version von tagwerk.json) lässt sich so einlesen. Nicht gespeicherte Mitschriften kommen nach einem Neustart als Entwurf zurück</li>
         <li><b>Listen anordnen</b>: Im Projekt auf das Reihenfolge-Symbol klicken. Dann verschieben die Pfeile ‹ › an jeder Liste sie um eine Stelle, auch über Seitengrenzen; per Ziehen blättert die Ansicht weiter, wenn man am Rand oder auf den Seitenpfeilen kurz verweilt (gilt auch für Aufgaben)</li>
@@ -2843,7 +2855,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-11-06 · E-Mail → Aufgaben';
+  const BUILD = '2026-11-06 · +-Button, endloses Wischen, Projekt merken';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -2963,6 +2975,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     const app = $('#app');
     const scrolls = [...app.querySelectorAll('.days, .mgrid, .lists')].map((el) => el.scrollTop);
     applySettings();
+    try { const cp = curProject(); if (cp && localStorage.getItem('tagwerk-projekt') !== cp.id) localStorage.setItem('tagwerk-projekt', cp.id); } catch (e) { /* ohne Speicher */ }
     app.dataset.view = ui.mode;
     app.replaceChildren(topBar(), ui.view === 'month' ? monthArea() : weekArea(), band(), listsArea(), tabsBar());
     fitTail();
@@ -3079,11 +3092,56 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
   function edgeBig(name, label, fn) { return h('button', { type: 'button', class: 'edge-big', title: label, 'aria-label': label, onclick: fn }, icon(name)); }
   function edgeSmall(name, label, fn) { return h('button', { type: 'button', class: 'edge-small', title: label, 'aria-label': label, onclick: fn }, icon(name)); }
 
+
+  function wireDayScroll(el, startIdx) {
+    const jump = () => { el.scrollLeft = startIdx * el.clientWidth; };
+    jump(); requestAnimationFrame(jump); setTimeout(jump, 60);
+    let ticking = false;
+    el.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const w = Math.max(1, el.clientWidth);
+        const idx = Math.round(el.scrollLeft / w);
+        const col = el.children[idx];
+        if (!col || !col.dataset.date) return;
+        ui.offset = L.daysBetween(today, col.dataset.date);
+        if (idx < 6) {
+          const add = 21;
+          const first = stepDay(ui.dStart, -add);
+          el.prepend(...mobileDays(first, add).map((d) => dayColumn(d, 0)));
+          ui.dStart = first; ui.dCount += add;
+          el.scrollLeft += add * w;
+        } else if (idx > el.children.length - 7) {
+          const add = 21;
+          const from = stepDay(ui.dStart, ui.dCount);
+          el.append(...mobileDays(from, add).map((d) => dayColumn(d, 0)));
+          ui.dCount += add;
+        }
+      });
+    }, { passive: true });
+  }
+  /** Handy: ein „unendliches“ Fenster aus Tagen; wird beim Wischen an beiden Enden nachgeladen. */
+  const stepDay = (iso, n) => (span() === 'work' ? L.stepWorkday(iso, n) : L.addDays(iso, n));
+  function mobileDays(start, count) { const out = []; let d = start; for (let i = 0; i < count; i++) { out.push(d); d = stepDay(d, 1); } return out; }
   function weekArea() {
-    const days = L.daysForSpan(L.addDays(today, ui.offset), span());
-    const daysEl = h('div', { class: 'days' }, days.map((d, i) => dayColumn(d, i)));
-    if (days.length > 5) daysEl.classList.add('dense');
-    daysEl.style.gridTemplateColumns = 'repeat(' + days.length + ', minmax(150px, 1fr))';
+    const mobile = isMobile();
+    let days;
+    let startIdx = 0;
+    if (mobile) {
+      const base = span() === 'work' ? L.workdayFrom(L.addDays(today, ui.offset)) : L.addDays(today, ui.offset);
+      const sig = span();
+      if (!ui.dStart || ui.dSpan !== sig || base < stepDay(ui.dStart, 3) || base > stepDay(ui.dStart, ui.dCount - 4)) {
+        ui.dStart = stepDay(base, -14); ui.dCount = 40; ui.dSpan = sig;
+      }
+      days = mobileDays(ui.dStart, ui.dCount);
+      startIdx = Math.max(0, days.indexOf(base));
+    } else days = L.daysForSpan(L.addDays(today, ui.offset), span());
+    const daysEl = h('div', { class: 'days' }, days.map((d, i) => dayColumn(d, mobile ? 0 : i)));
+    if (!mobile && days.length > 5) daysEl.classList.add('dense');
+    if (!mobile) daysEl.style.gridTemplateColumns = 'repeat(' + days.length + ', minmax(150px, 1fr))';
+    else wireDayScroll(daysEl, startIdx);
     return h('section', { class: 'week' },
       h('div', { class: 'edge edge-left' },
         edgeBig('chev-l', 'Einen Tag zurück', () => shift(-1)),
@@ -4489,10 +4547,17 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     if (e.target.value) o.notes = e.target.value; else delete o.notes;
     saveSoon();
   });
-  editDlg.addEventListener('close', () => { if (editDlg.open) return; editCtx = null; render(); });
+  editDlg.addEventListener('close', () => {
+    if (editDlg.open) return;
+    if (editCtx && editCtx.fresh) { // neue, leer gebliebene Aufgabe verwerfen
+      const t = state.todos.find((x) => x.id === editCtx.id);
+      if (t && !String(t.text).trim()) state.todos = state.todos.filter((x) => x !== t);
+    }
+    editCtx = null; render();
+  });
 
   function fillEdit(text, date, listId, rule, ruleOnly, side, projectId) {
-    $('#edit-title').textContent = ruleOnly ? 'Wiederkehrende Aufgabe' : 'Aufgabe';
+    $('#edit-text').placeholder = ruleOnly ? 'Wiederkehrende Aufgabe …' : 'Aufgabe …';
     const o = editTarget();
     $('#edit-notes').value = (o && o.notes) || '';
     $('#edit-prio').checked = !!(o && o.prio);
@@ -4532,13 +4597,30 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
   function openEdit(id) {
     const t = state.todos.find((x) => x.id === id);
     if (!t) return;
+    // zweiter Klick auf dieselbe Aufgabe: Seitenleiste wieder schließen (und speichern)
+    if (editDlg.open && editCtx && editCtx.kind === 'todo' && editCtx.id === id) { saveDrawer(editDlg); return; }
     const side = placeDrawer(editDlg);
     editCtx = { kind: 'todo', id };
     fillEdit(t.text, t.date, t.listId, t.recurId ? state.recurs.find((r) => r.id === t.recurId) : null, false, side, t.projectId);
   }
+
+  /** Großer +-Button: neue Aufgabe mit allen Feldern (Titel, Projekt, Datum, Frist, Unteraufgaben …). */
+  function openNew() {
+    const p = curProject();
+    const list = p ? L.listsOf(state, p.id).find((l) => !l.deadline) : null;
+    const t = { id: L.uid(), text: '', date: list ? null : today, listId: list ? list.id : null, projectId: p ? p.id : null, done: false,
+      order: list ? L.nextOrderInList(state, list.id) : L.nextOrder(state, today) };
+    state.todos.push(t);
+    const side = placeDrawer(editDlg, true);
+    editCtx = { kind: 'todo', id: t.id, fresh: true };
+    fillEdit('', t.date, t.listId, null, false, side, t.projectId);
+    $('#edit-text').focus();
+  }
+  $('#fab').addEventListener('click', openNew);
   function openRule(id) {
     const r = state.recurs.find((x) => x.id === id);
     if (!r) return;
+    if (editDlg.open && editCtx && editCtx.kind === 'rule' && editCtx.id === id) { saveDrawer(editDlg); return; }
     const side = placeDrawer(editDlg);
     editCtx = { kind: 'rule', id };
     fillEdit(r.text, null, null, r, true, side);
@@ -4604,7 +4686,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
   $('#edit-delete').addEventListener('click', () => {
     const ctx = editCtx;
     editDlg.close();
-    if (!ctx) return;
+    if (!ctx || ctx.fresh) return;
     if (ctx.kind === 'todo') deleteTodo(ctx.id);
     else withUndo('Wiederholung gelöscht.', () => removeRule(ctx.id));
   });
@@ -4900,7 +4982,8 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     const n = mailCount();
     const b = $('#mail-create');
     b.textContent = n ? n + ' Aufgabe' + (n === 1 ? '' : 'n') + ' anlegen' : 'Anlegen';
-    b.disabled = !n;
+    b.disabled = !n || !$('#mail-project').value;
+    $('#mail-project').classList.toggle('need', !$('#mail-project').value);
   }
   function analyseMail() {
     mailRows = L.parseMail($('#mail-text').value, today);
@@ -4909,19 +4992,20 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
   function openMail(preset) {
     const dlg = $('#mail-dialog');
     const sel = $('#mail-project');
-    sel.replaceChildren(...activeProjects().map((p) => h('option', { value: p.id }, p.name)));
-    sel.value = curProject().id;
+    sel.replaceChildren(h('option', { value: '' }, '– Projekt wählen –'), ...activeProjects().map((p) => h('option', { value: p.id }, p.name)));
+    sel.value = '';
     if (typeof preset === 'string') $('#mail-text').value = preset;
     placeDrawer(dlg, true);
     openDrawer(dlg, 'right');
     analyseMail();
-    $('#mail-text').focus();
+    $('#mail-project').focus();
   }
   (function setupMail() {
     let tm = null;
     const ta = $('#mail-text');
     ta.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(analyseMail, 350); });
     ta.addEventListener('paste', () => setTimeout(analyseMail, 0));
+    $('#mail-project').addEventListener('change', updateMailBtn);
     $('#mail-clear').addEventListener('click', () => { ta.value = ''; analyseMail(); ta.focus(); });
     $('#mail-form').addEventListener('submit', (e) => {
       const submitter = e.submitter;
@@ -4930,7 +5014,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
       if (!rows.length) { e.preventDefault(); return; }
       const projId = $('#mail-project').value;
       const proj = projectById(projId);
-      if (!proj) return;
+      if (!proj) { e.preventDefault(); return; }
       withUndo(rows.length + (rows.length === 1 ? ' Aufgabe' : ' Aufgaben') + ' aus E-Mail angelegt.', () => {
         L.ensureDeadlineLists(state);
         const lists = L.listsOf(state, projId);
@@ -5037,6 +5121,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     }
     if (!window.api && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     ui.projectId = firstActive().id;
+    try { const lp = localStorage.getItem('tagwerk-projekt'); const pp = lp && projectById(lp); if (pp && !pp.archived && !pp.trashed) ui.projectId = pp.id; } catch (e) { /* ohne Speicher */ }
     today = L.todayISO();
     ui.month = L.monthStart(today);
     L.materialize(state, today);
