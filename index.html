@@ -722,6 +722,42 @@ dialog input.title-input:focus { outline: none; border-bottom-color: var(--accen
 body:has(dialog[open]) .fab { display: none; }
 @media (max-width: 700px) { .fab { right: 14px; width: 64px; height: 64px; } }
 
+/* Seitenleiste: Ausblenden spiegelt das Einblenden */
+dialog.drawer.slide-out { animation: drawer-out 0.22s ease-in forwards; }
+dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
+@keyframes drawer-out { from { transform: none; } to { transform: translateX(100%); } }
+@keyframes drawer-out-left { from { transform: none; } to { transform: translateX(-100%); } }
+@media (prefers-reduced-motion: reduce) { dialog.drawer.slide-out { animation: none; } }
+
+/* Woche/Monat: Bedienelemente behalten ihren Platz */
+.ghost { visibility: hidden; pointer-events: none; }
+
+/* Datum: Schnellwahl */
+.datequick { display: flex; gap: 8px; margin: -4px 0 10px; flex-wrap: wrap; }
+.datequick button { border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 999px; padding: 5px 14px; font-size: 13px; cursor: pointer; }
+.datequick button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Monatsansicht: Punkte statt Text (nur Handy) */
+.mdots { display: none; }
+@media (max-width: 700px) {
+  .mwrap { margin: 0 34px; }
+  .mtitle { font: 700 18px/24px var(--font); padding: 6px 0 4px 8px; }
+  #app[data-mview="month"] .lists { display: none; }
+  #app[data-mview="month"] .month { flex: 1 1 0; }
+  .mweekdays div { padding: 3px 0; text-align: center; font-size: 10px; }
+  .mgrid { grid-auto-rows: 62px; }
+  .mcell { height: 62px; padding: 3px 2px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .mitems, .mmore, .mkw { display: none; }
+  .mnum { min-width: 26px; height: 26px; font-size: 18px; line-height: 26px; border-radius: 13px; }
+  .mmon { display: none; }
+  .mdots { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 3px; max-width: 100%; }
+  .mdot { display: block; width: 8px; height: 8px; border-radius: 50%; }
+  .mdot.done { opacity: .3; }
+  .mdot.frist { background: var(--accent); }
+  .mdots b { font-size: 9px; font-weight: 800; color: var(--muted); line-height: 8px; }
+  .mcell.today { background: var(--accent-soft); }
+}
+
 </style>
 </head>
 <body>
@@ -736,6 +772,11 @@ body:has(dialog[open]) .fab { display: none; }
       <div class="row2">
         <label id="edit-date-wrap">Datum<input id="edit-date" type="date"></label>
         <label id="edit-list-wrap">Projekt<select id="edit-project"></select></label>
+      </div>
+      <div class="datequick" id="edit-datequick">
+        <button type="button" data-d="heute">Heute</button>
+        <button type="button" data-d="morgen">Morgen</button>
+        <button type="button" data-d="">Kein Datum</button>
       </div>
       <div class="checks" id="edit-checks">
         <label class="check-row"><input id="edit-prio" type="checkbox"> Hohe Priorität</label>
@@ -2685,7 +2726,7 @@ body:has(dialog[open]) .fab { display: none; }
     return svg;
   }
   function ibtn(name, label, onclick, extra) {
-    return h('button', { type: 'button', class: 'ibtn' + (extra ? ' ' + extra : ''), title: label, 'aria-label': label, onclick }, icon(name));
+    return h('button', { type: 'button', class: 'ibtn' + (extra ? ' ' + extra : ''), title: label, 'aria-label': label, onclick, tabindex: extra === 'ghost' ? '-1' : null, 'aria-hidden': extra === 'ghost' ? 'true' : null }, icon(name));
   }
 
   /** Lesbare Schriftfarbe auf einer Projektfarbe. */
@@ -2810,7 +2851,19 @@ body:has(dialog[open]) .fab { display: none; }
     if (save && form.checkValidity()) form.requestSubmit();
     if (o.open) o.close();
   }
-  const openDrawers = () => [...document.querySelectorAll('dialog.drawer[open]')];
+  const openDrawers = () => [...document.querySelectorAll('dialog.drawer[open]:not(.slide-out)')];
+  // Seitenleisten gleiten beim Schließen genauso schnell hinaus, wie sie hereingeschoben werden
+  const nativeClose = HTMLDialogElement.prototype.close;
+  const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  HTMLDialogElement.prototype.close = function close(rv) {
+    if (this.classList.contains('drawer') && this.open && this.classList.contains('slide-in') && !reduceMotion()) {
+      if (this._closing) return;
+      this.classList.add('slide-out');
+      this._closing = setTimeout(() => { this._closing = null; this.classList.remove('slide-out'); nativeClose.call(this, rv); }, 220);
+      return;
+    }
+    nativeClose.call(this, rv);
+  };
   /**
    * Bestimmt die Seite für ein Seitenfenster: rechts, solange dort nichts anderes offen ist, sonst links.
    * Das Fenster selbst (neu befüllt) wird vorher gespeichert; exclusive schließt alle anderen.
@@ -2827,7 +2880,8 @@ body:has(dialog[open]) .fab { display: none; }
   }
   let drawerFresh = false;
   function openDrawer(dlg, side) {
-    dlg.classList.remove('slide-in');
+    if (dlg._closing) { clearTimeout(dlg._closing); dlg._closing = null; }
+    dlg.classList.remove('slide-in', 'slide-out');
     dlg.classList.toggle('left', side === 'left');
     dlg.show();
     void dlg.offsetWidth;
@@ -2855,7 +2909,7 @@ body:has(dialog[open]) .fab { display: none; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-11-06 · +-Button, endloses Wischen, Projekt merken';
+  const BUILD = '2026-11-06 · Monat am Handy, Datum Heute/Morgen, Seitenleiste gleitet hinaus';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -2977,6 +3031,7 @@ body:has(dialog[open]) .fab { display: none; }
     applySettings();
     try { const cp = curProject(); if (cp && localStorage.getItem('tagwerk-projekt') !== cp.id) localStorage.setItem('tagwerk-projekt', cp.id); } catch (e) { /* ohne Speicher */ }
     app.dataset.view = ui.mode;
+    app.dataset.mview = ui.view;
     app.replaceChildren(topBar(), ui.view === 'month' ? monthArea() : weekArea(), band(), listsArea(), tabsBar());
     fitTail();
     syncTabsHeight();
@@ -3073,13 +3128,13 @@ body:has(dialog[open]) .fab { display: none; }
     const seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Ansicht' }, segBtn('Woche', 'week'), segBtn('Monat', 'month'));
     const month = ui.view === 'month';
     const spanBtn = (label, v, title) => h('button', { type: 'button', title, 'aria-pressed': String(span() === v), onclick: () => { state.settings.span = v; saveSoon(); render(); } }, label);
-    const spanSeg = month ? null : h('div', { class: 'seg', role: 'group', 'aria-label': 'Sichtbare Tage' },
+    const spanSeg = h('div', { class: 'seg' + (month ? ' ghost' : ''), role: 'group', 'aria-label': 'Sichtbare Tage', 'aria-hidden': month ? 'true' : null, inert: month ? true : null },
       spanBtn('5 Tage', 'work', 'Fünf Arbeitstage ab heute, Samstag und Sonntag ausgeblendet'), spanBtn('7 Tage', 'full', 'Sieben Tage ab heute'));
     const right = h('div', { class: 'bar-right' }, spanSeg, seg,
-      month ? null : ibtn('dbl-l', 'Eine Woche zurück', () => shift(-7)),
+      ibtn('dbl-l', 'Eine Woche zurück', () => shift(-7), month ? 'ghost' : ''),
       ibtn('chev-l', month ? 'Einen Monat zurück' : 'Einen Tag zurück', () => (month ? shiftMonth(-1) : shift(-1))),
       ibtn('chev-r', month ? 'Einen Monat vor' : 'Einen Tag vor', () => (month ? shiftMonth(1) : shift(1))),
-      month ? null : ibtn('dbl-r', 'Eine Woche vor', () => shift(7)),
+      ibtn('dbl-r', 'Eine Woche vor', () => shift(7), month ? 'ghost' : ''),
       ibtn('calendar', 'Zu Datum springen', (e) => openDatePicker(e.currentTarget)),
       ibtn('layout', ui.mode === 'max' ? 'Zurück zur Wochenansicht' : 'Projektseite (Listen groß)', () => {
         ui.mode = ui.mode === 'max' ? 'open' : 'max';
@@ -3310,6 +3365,18 @@ body:has(dialog[open]) .fab { display: none; }
     li.addEventListener('dragend', () => { drag = null; clearMarks(); li.classList.remove('dragging'); });
     return li;
   }
+  /** Kompakte Punkte je Tag (am Handy statt der Textzeilen). */
+  function monthDots(iso, total) {
+    const items = [...(iso === today ? L.overdueFristen(state, today) : []), ...L.todosOnDate(state, iso)].filter((t) => !L.isHeading(t.text));
+    const dots = items.slice(0, 4).map((t) => {
+      const p = t.projectId ? projectById(t.projectId) : null;
+      const d = h('i', { class: 'mdot' + (t.done ? ' done' : '') + (isFrist(t) ? ' frist' : '') });
+      if (!isFrist(t)) d.style.background = p ? p.color : 'var(--muted)';
+      return d;
+    });
+    const more = total - dots.length;
+    return h('span', { class: 'mdots', 'aria-hidden': 'true' }, dots, more > 0 ? h('b', {}, '+' + more) : null);
+  }
   function monthCell(iso) {
     const d = L.parseISO(iso);
     const chips = [...(iso === today ? L.overdueFristen(state, today).map((t) => monthChip(t, true)) : []), ...L.todosOnDate(state, iso).map((t) => monthChip(t))];
@@ -3325,6 +3392,7 @@ body:has(dialog[open]) .fab { display: none; }
     d.getDay() === 1 ? h('span', { class: 'mkw', title: 'Kalenderwoche ' + L.isoWeek(iso).week }, 'KW ' + L.isoWeek(iso).week) : null,
     d.getDate() === 1 ? h('span', { class: 'mmon' }, fmtMon.format(d).replace('.', '')) : null,
     h('ul', { class: 'mitems' }, chips.slice(0, MONTH_MAX)),
+    monthDots(iso, chips.length),
     rest > 0 ? h('button', { type: 'button', class: 'mmore', onclick: (e) => { e.stopPropagation(); goToDay(iso); } }, '+ ' + rest + ' weitere') : null);
     cell.addEventListener('dragover', (e) => {
       if (!drag || drag.kind !== 'todo') return;
@@ -4566,6 +4634,7 @@ body:has(dialog[open]) .fab { display: none; }
     $('#edit-text').value = text;
     $('#edit-date').value = date || '';
     $('#edit-date-wrap').hidden = ruleOnly;
+    $('#edit-datequick').hidden = ruleOnly;
     $('#edit-list-wrap').hidden = ruleOnly;
     const sel = $('#edit-project');
     sel.replaceChildren(h('option', { value: '' }, '– kein Projekt –'),
@@ -4594,11 +4663,18 @@ body:has(dialog[open]) .fab { display: none; }
   }
   ['#edit-project', '#edit-frist', '#edit-date'].forEach((sel) => $(sel).addEventListener('input', editWhere));
   ['#edit-project', '#edit-frist', '#edit-date'].forEach((sel) => $(sel).addEventListener('change', editWhere));
+  $('#edit-datequick').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-d]');
+    if (!b) return;
+    const v = b.dataset.d;
+    $('#edit-date').value = v === 'heute' ? today : v === 'morgen' ? L.addDays(today, 1) : '';
+    $('#edit-date').dispatchEvent(new Event('input', { bubbles: true }));
+  });
   function openEdit(id) {
     const t = state.todos.find((x) => x.id === id);
     if (!t) return;
     // zweiter Klick auf dieselbe Aufgabe: Seitenleiste wieder schließen (und speichern)
-    if (editDlg.open && editCtx && editCtx.kind === 'todo' && editCtx.id === id) { saveDrawer(editDlg); return; }
+    if (editDlg.open && !editDlg.classList.contains('slide-out') && editCtx && editCtx.kind === 'todo' && editCtx.id === id) { saveDrawer(editDlg); return; }
     const side = placeDrawer(editDlg);
     editCtx = { kind: 'todo', id };
     fillEdit(t.text, t.date, t.listId, t.recurId ? state.recurs.find((r) => r.id === t.recurId) : null, false, side, t.projectId);
@@ -4620,7 +4696,7 @@ body:has(dialog[open]) .fab { display: none; }
   function openRule(id) {
     const r = state.recurs.find((x) => x.id === id);
     if (!r) return;
-    if (editDlg.open && editCtx && editCtx.kind === 'rule' && editCtx.id === id) { saveDrawer(editDlg); return; }
+    if (editDlg.open && !editDlg.classList.contains('slide-out') && editCtx && editCtx.kind === 'rule' && editCtx.id === id) { saveDrawer(editDlg); return; }
     const side = placeDrawer(editDlg);
     editCtx = { kind: 'rule', id };
     fillEdit(r.text, null, null, r, true, side);
