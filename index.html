@@ -699,6 +699,19 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
 .list-head .lmv:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .list-head .lmv:disabled { opacity: 0.3; }
 
+/* E-Mail → Aufgaben */
+.mrows { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.mrow { display: flex; gap: 8px; align-items: flex-start; padding: 8px; border: 1px solid var(--line, #ddd); border-radius: 8px; }
+.mrow.off { opacity: .55; }
+.mrow > input[type=checkbox] { margin-top: 10px; width: 18px; height: 18px; flex: none; }
+.mfields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.mline { display: flex; gap: 6px; flex-wrap: wrap; }
+.mline select, .mline input { flex: 1 1 130px; min-width: 0; }
+.mtext { width: 100%; box-sizing: border-box; }
+.mdel { flex: none; background: none; border: 0; font-size: 20px; line-height: 1; padding: 6px 8px; cursor: pointer; color: inherit; opacity: .6; }
+.mdel:hover { opacity: 1; }
+#mail-text { width: 100%; box-sizing: border-box; }
+
 </style>
 </head>
 <body>
@@ -877,6 +890,22 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     </form>
   </dialog>
 
+  <dialog id="mail-dialog" class="drawer">
+    <form method="dialog" id="mail-form">
+      <h2>E-Mail → Aufgaben</h2>
+      <p class="hint">E-Mail-Text einfügen: Tagwerk erkennt Zusagen und Fristen (z. B. „bis zum 13.11.2026“) und schlägt Aufgaben vor. Das ist eine Texterkennung nach festen Regeln, keine KI – bitte die Vorschläge prüfen. Bitten an die Gegenseite („Bitte teilen Sie uns mit …“) sind als „Nachfassen“ vorgeschlagen, aber nicht angehakt.</p>
+      <label>Projekt <select id="mail-project"></select></label>
+      <label>E-Mail-Text <textarea id="mail-text" rows="7" placeholder="E-Mail hier einfügen …"></textarea></label>
+      <div class="row2"><button type="button" id="mail-clear">Text leeren</button></div>
+      <p id="mail-empty" class="hint" hidden>Keine Aufgaben erkannt. Du kannst den Text anpassen.</p>
+      <ul id="mail-rows" class="mrows"></ul>
+      <div class="dialog-actions">
+        <button type="submit" value="cancel" id="mail-cancel">Abbrechen</button>
+        <span class="spacer"></span>
+        <button type="submit" value="ok" id="mail-create" class="primary">Anlegen</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="backup-dialog" class="drawer">
     <form method="dialog" id="backup-form">
       <h2>Sicherungen</h2>
@@ -912,6 +941,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
         <li><b>Aufgaben aus Mitschriften</b>: Text oder Zeilen markieren und auf „→ Aufgabe“ klicken (oder Strg+Umschalt+A); ohne Markierung wird die aktuelle Zeile genommen. Der Text bleibt, die Zeile bekommt eine Marke ⟦T:…⟧ und erscheint in „Lesen“ als anklickbares „→ Aufgabe“ bzw. „✓ Aufgabe“. Teilnehmer lassen sich am Griff per Drag &amp; Drop sortieren; die Reihenfolge gilt auch in „Lesen“</li>
+        <li><b>E-Mail → Aufgaben</b>: Mail-Symbol oben links → Projekt wählen, E-Mail-Text einfügen. Tagwerk schlägt Fristen („bis zum …“), Aufgaben mit Datum und Aufgaben ohne Datum vor (Regelerkennung, keine KI – bitte prüfen). Bitten an die Gegenseite sind als „Nachfassen“ vorgeschlagen, aber nicht angehakt. Jede Zeile ist änderbar</li>
         <li><b>Datensicherheit</b>: Tagwerk legt auf jedem Gerät automatisch Sicherungen an (Symbol oben links mit den zwei Pfeilen → „Sicherungen / Wiederherstellung“). Fehlt etwas, zeigt die Liste „Fehlt jetzt: …“, ein Klick holt es zurück, ohne Vorhandenes zu überschreiben. Auch eine alte Datei (z. B. frühere OneDrive-Version von tagwerk.json) lässt sich so einlesen. Nicht gespeicherte Mitschriften kommen nach einem Neustart als Entwurf zurück</li>
         <li><b>Listen anordnen</b>: Im Projekt auf das Reihenfolge-Symbol klicken. Dann verschieben die Pfeile ‹ › an jeder Liste sie um eine Stelle, auch über Seitengrenzen; per Ziehen blättert die Ansicht weiter, wenn man am Rand oder auf den Seitenpfeilen kurz verweilt (gilt auch für Aufgaben)</li>
         <li><b>Projektleiste</b> unten: normale Projekte haben einen farbigen Balken, <b>interne</b> sind schraffiert und kursiv. Seitenfenster enden oberhalb der Leiste, alle Projekte bleiben erreichbar</li>
@@ -1849,6 +1879,100 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     return null;
   }
 
+
+  // ---------- E-Mail-Text → Aufgabenvorschläge ----------
+  const MAIL_VERB = /(liefer|send|übersend|übermittel|vorleg|\bleg\w* .*\bvor\b|einreich|übergeb|übergab|überreich|erstell|einarbeit|arbeit\w* .*\bein\b|prüf|abstimm|nachreich|zuarbeit|klär|anfrag|beauftrag|freigab|fertigstell|abgeben|schick|terminier|vereinbar|organisier|benötig|mitteil|bestätig|zusend|aufstell|\bstell\w* .*\bauf\b|\bpass\w* .*\ban\b|anpass|überarbeit|ergänz|korrigier|rückmeld|zurückmeld|bereitstell|abschließ|durchführ|beantrag|vorbereit|bitte|bitten|nachfass|erinner|einplan|berücksichtig|vorlage)/i;
+  const MAIL_SKIP = /(klarstellung|\bbetraf\b|bezog ich|halten wir fest|ziehen wir .* zurück|zur kenntnis|vielen dank|sehr geehrte|freundliche|hochachtung|bei rückfragen|mit besten|beste grüße|viele grüße|anbei finden)/i;
+  const MAIL_COND = /^(bei|wenn|falls|sollte|sofern|ab)\b/i;
+  const MAIL_ASK = /\b(bitte|bitten|bittet|bitt)\b/i;
+  const MAIL_DEADLINE = /(\bbis( spätestens)?( zum| zu| zur| Ende| einschließlich| auf| zu dem)?|spätestens|\bFrist\b|\bvor dem\b|fällig|\bwährend\b)\s*(am|zum|dem|den)?\s*$/i;
+  const MAIL_ABBR = /^(z|b|u|d|a|ca|nr|abs|kap|bzw|ggf|inkl|vgl|usw|etc|hr|fr|dr|prof|st|tel|bsp|evtl|sog|zzgl|ggü)$/i;
+  const MAIL_LABEL_STOP = /^(zunächst|ergänzend|außerdem|zudem|hinweis|bitte|vielen|wie|bei|mit|für|da|wenn|ob|dass|zu den|zur|zum|in|im|am|nach|vor|von)\b/i;
+
+  function mailSentences(line) {
+    const out = [];
+    let start = 0;
+    const re = /([.!?])\s+(?=[A-ZÄÖÜ(„"“])/g;
+    let m;
+    while ((m = re.exec(line))) {
+      const before = line.slice(start, m.index).split(/\s+/).pop();
+      if (m[1] === '.' && MAIL_ABBR.test(before.replace(/[()„“"]/g, ''))) continue;
+      out.push(line.slice(start, m.index + 1).trim());
+      start = m.index + m[0].length;
+    }
+    const rest = line.slice(start).trim();
+    if (rest) out.push(rest);
+    return out;
+  }
+  function mailDates(text, today) {
+    const found = [];
+    const re = /(\d{1,2})\.\s?(\d{1,2})\.(?:\s?(\d{4}|\d{2})(?!\d)|(?![\d]))/g;
+    let m;
+    while ((m = re.exec(text))) {
+      const d = +m[1], mo = +m[2];
+      if (mo < 1 || mo > 12 || d < 1 || d > 31) continue;
+      let y = m[3] ? +m[3] : +today.slice(0, 4);
+      if (m[3] && m[3].length === 2) y += 2000;
+      let iso = y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      if (!m[3] && iso < addDays(today, -30)) iso = (y + 1) + iso.slice(4);
+      if (Number.isNaN(new Date(iso + 'T00:00:00').getTime()) || parseISO(iso).getDate() !== d) continue;
+      found.push({ iso, start: m.index, end: m.index + m[0].length });
+    }
+    return found;
+  }
+  /**
+   * Zerlegt einen E-Mail-Text in Vorschläge: Fristen („bis …“), Aufgaben mit Datum und Aufgaben ohne Datum.
+   * Regelbasiert und ohne Netz; die Vorschläge werden vor dem Anlegen geprüft.
+   * Ergebnis: [{ text, date|null, kind: 'frist'|'termin'|'offen', source, include }]
+   */
+  function parseMail(raw, today) {
+    const rows = [];
+    let heading = '';
+    const lines = String(raw || '').replace(/\r/g, '').split('\n').map((x) => x.replace(/​/g, '').trim());
+    for (let line of lines) {
+      if (!line) continue;
+      if (/^>/.test(line)) continue; // zitierte Mail
+      const hm = /^\(?\d+[.)]\)?\s+(.{2,60})$/.exec(line);
+      if (hm && !/[.!?:]$/.test(hm[1]) && !MAIL_VERB.test(hm[1])) { heading = hm[1].trim(); continue; }
+      line = line.replace(/^[-–•*]\s+/, '');
+      let label = '';
+      const lm = /^([^:.]{2,40}):\s+(\S.*)$/.exec(line);
+      if (lm && lm[1].split(/\s+/).length <= 4 && !MAIL_LABEL_STOP.test(lm[1]) && !/^\d/.test(lm[1])) { label = lm[1].trim(); line = lm[2]; }
+      else if (/:$/.test(line)) continue;
+      const prefix = label || heading;
+      for (const sent of mailSentences(line)) {
+        if (MAIL_SKIP.test(sent)) continue;
+        const dates = mailDates(sent, today).map((d) => {
+          const before = sent.slice(Math.max(0, d.start - 40), d.start);
+          const dl = MAIL_DEADLINE.test(before);
+          return Object.assign(d, { kind: dl ? 'frist' : (d.iso >= today ? 'termin' : 'ref') });
+        });
+        const usable = dates.filter((d) => d.kind !== 'ref');
+        const ask = MAIL_ASK.test(sent);
+        if (!usable.length && !MAIL_VERB.test(sent)) continue;
+        const pre = (ask ? 'Nachfassen: ' : '') + (prefix ? prefix + ': ' : '');
+        const clip = (t) => { const x = t.replace(/\s+/g, ' ').replace(/^[,;\s]+/, '').trim(); return x.length > 200 ? x.slice(0, 197) + '…' : x; };
+        const cond = (t) => MAIL_COND.test(t.replace(/^\s+/, ''));
+        if (usable.length <= 1) {
+          const d = usable[0];
+          rows.push({ text: clip(pre + sent), date: d ? d.iso : null, kind: d ? d.kind : 'offen', source: sent, include: !ask && !cond(sent) });
+        } else {
+          let from = 0;
+          usable.forEach((d, i) => {
+            const to = i === usable.length - 1 ? sent.length : d.end;
+            let seg = sent.slice(from, to).replace(/^[,;\s]+/, '');
+            const cont = i > 0 && /^(und|sowie|oder)\s/i.test(seg);
+            if (cont) seg = '… ' + seg.replace(/^(und|sowie|oder)\s+/i, '');
+            rows.push({ text: clip(pre + seg), date: d.iso, kind: d.kind, source: sent, include: !ask && !cond(seg) });
+            from = d.end;
+          });
+        }
+      }
+    }
+    const seen = new Set();
+    return rows.filter((r) => { const k = r.text + '|' + r.date; if (seen.has(k)) return false; seen.add(k); return true; });
+  }
+
   return {
     DAYS_VISIBLE, DEFAULT_ACCENT, FREQS,
     toISO, parseISO, addDays, daysBetween, todayISO, visibleDays, uid,
@@ -1856,7 +1980,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     todosOnDate, todosInList, listsOf, plannedForProject, nextOrder, nextOrderInList,
     rollover, orderForIndex, moveTodo, moveToList, reorderLists,
     occursOn, materialize, virtualOn, search,
-    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople, archivedIds, internalIds, searchArchive, APP, taskKey, stripTaskMarks, splitTaskMarks, isoWeek, reorderProjects, renumberProjects,
+    isHeading, headingText, tokenize, parseInput, minutesOf, parseBlocks, cleanTime, cleanPeople, archivedIds, internalIds, searchArchive, APP, taskKey, stripTaskMarks, splitTaskMarks, parseMail, isoWeek, reorderProjects, renumberProjects,
   };
 });
 
@@ -2515,6 +2639,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
 
   const NS = 'http://www.w3.org/2000/svg';
   const ICONS = {
+    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>',
     sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
     sync: '<path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
@@ -2718,7 +2843,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-11-05 · Datensicherheit, Projektleiste, Listen seitenübergreifend';
+  const BUILD = '2026-11-06 · E-Mail → Aufgaben';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -2918,6 +3043,7 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     const syncStat = window.TagwerkSync ? window.TagwerkSync.statusEl() : null;
     const left = h('div', { class: 'bar-left' },
       ibtn('search', 'Suchen (/)', openSearch),
+      ibtn('mail', 'E-Mail → Aufgaben', () => openMail()),
       ibtn('sliders', 'Einstellungen', openPrefs),
       ibtn('sync', 'Datensicherung', (e) => showMenu(e.currentTarget, [
         { label: 'Sicherungen / Wiederherstellung …', run: openBackups },
@@ -4740,6 +4866,93 @@ dialog.drawer .dialog-actions { position: sticky; bottom: 0; background: var(--b
     if (!file) return;
     try { restoreFrom(await file.text(), 'der Datei „' + file.name + '“'); } catch (err) { toast('Die Datei konnte nicht gelesen werden.'); }
   });
+
+
+  // ---------- E-Mail → Aufgaben ----------
+  const KIND_LABEL = { frist: 'Frist', termin: 'Aufgabe mit Datum', offen: 'Aufgabe ohne Datum' };
+  let mailRows = [];
+  function mailCount() { return mailRows.filter((r) => r.include && r.text.trim()).length; }
+  function drawMailRows() {
+    const box = $('#mail-rows');
+    const out = mailRows.map((r) => {
+      const date = h('input', { type: 'date', value: r.date || '', 'aria-label': 'Datum', onchange: (e) => { r.date = e.target.value || null; } });
+      date.value = r.date || '';
+      date.hidden = r.kind === 'offen';
+      const text = h('textarea', { rows: '3', class: 'mtext', 'aria-label': 'Text', maxlength: '500', oninput: (e) => { r.text = e.target.value; } });
+      text.value = r.text;
+      const kind = h('select', { 'aria-label': 'Art', onchange: (e) => {
+        r.kind = e.target.value;
+        if (r.kind === 'offen') r.date = null; else if (!r.date) r.date = L.addDays(today, 7);
+        date.value = r.date || ''; date.hidden = r.kind === 'offen';
+      } }, Object.keys(KIND_LABEL).map((k) => h('option', { value: k }, KIND_LABEL[k])));
+      kind.value = r.kind;
+      const cb = h('input', { type: 'checkbox', 'aria-label': 'Anlegen', onchange: (e) => { r.include = e.target.checked; row.classList.toggle('off', !r.include); updateMailBtn(); } });
+      cb.checked = r.include;
+      const row = h('li', { class: 'mrow' + (r.include ? '' : ' off') }, cb, h('div', { class: 'mfields' }, h('div', { class: 'mline' }, kind, date), text),
+        h('button', { type: 'button', class: 'mdel', title: 'Zeile entfernen', 'aria-label': 'Zeile entfernen', onclick: () => { mailRows = mailRows.filter((x) => x !== r); drawMailRows(); } }, '×'));
+      return row;
+    });
+    box.replaceChildren(...out);
+    $('#mail-empty').hidden = mailRows.length > 0 || !$('#mail-text').value.trim();
+    updateMailBtn();
+  }
+  function updateMailBtn() {
+    const n = mailCount();
+    const b = $('#mail-create');
+    b.textContent = n ? n + ' Aufgabe' + (n === 1 ? '' : 'n') + ' anlegen' : 'Anlegen';
+    b.disabled = !n;
+  }
+  function analyseMail() {
+    mailRows = L.parseMail($('#mail-text').value, today);
+    drawMailRows();
+  }
+  function openMail(preset) {
+    const dlg = $('#mail-dialog');
+    const sel = $('#mail-project');
+    sel.replaceChildren(...activeProjects().map((p) => h('option', { value: p.id }, p.name)));
+    sel.value = curProject().id;
+    if (typeof preset === 'string') $('#mail-text').value = preset;
+    placeDrawer(dlg, true);
+    openDrawer(dlg, 'right');
+    analyseMail();
+    $('#mail-text').focus();
+  }
+  (function setupMail() {
+    let tm = null;
+    const ta = $('#mail-text');
+    ta.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(analyseMail, 350); });
+    ta.addEventListener('paste', () => setTimeout(analyseMail, 0));
+    $('#mail-clear').addEventListener('click', () => { ta.value = ''; analyseMail(); ta.focus(); });
+    $('#mail-form').addEventListener('submit', (e) => {
+      const submitter = e.submitter;
+      if (!submitter || submitter.id !== 'mail-create') return; // Abbrechen schließt nur
+      const rows = mailRows.filter((r) => r.include && r.text.trim());
+      if (!rows.length) { e.preventDefault(); return; }
+      const projId = $('#mail-project').value;
+      const proj = projectById(projId);
+      if (!proj) return;
+      withUndo(rows.length + (rows.length === 1 ? ' Aufgabe' : ' Aufgaben') + ' aus E-Mail angelegt.', () => {
+        L.ensureDeadlineLists(state);
+        const lists = L.listsOf(state, projId);
+        const dl = lists.find((l) => l.deadline);
+        const open = lists.find((l) => !l.deadline);
+        for (const r of rows) {
+          let date = r.kind === 'offen' ? null : (r.date || L.addDays(today, 7));
+          let listId = null;
+          if (r.kind === 'frist') listId = dl ? dl.id : null;
+          else if (r.kind === 'offen') listId = open ? open.id : null;
+          if (!date && !listId) date = today;
+          const todo = { id: L.uid(), text: r.text.trim().slice(0, 500), date, listId, projectId: projId, done: false,
+            order: date ? L.nextOrder(state, date) : L.nextOrderInList(state, listId) };
+          if (r.source && r.source.trim() !== r.text.trim() && r.source.length <= 1000) todo.notes = r.source.trim();
+          state.todos.push(todo);
+        }
+        ui.projectId = projId; ui.view = ui.view; ui.showOverview = false; ui.showDone = false; ui.showArchive = false; ui.showTrash = false;
+      });
+      $('#mail-text').value = '';
+      mailRows = [];
+    });
+  })();
 
   // ---------- Tageswechsel, Tastatur ----------
   function checkNewDay(announce) {
