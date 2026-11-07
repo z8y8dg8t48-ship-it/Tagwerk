@@ -758,6 +758,13 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   .mcell.today { background: var(--accent-soft); }
 }
 
+/* Nachfassen */
+.todo.follow .todo-text::before, .mchip.follow .mtext::before { content: "↩ "; color: var(--muted); font-weight: 700; }
+.mdot.follow { outline: 1.5px solid var(--muted); outline-offset: -1.5px; }
+
+.msrc { font-size: 11.5px; line-height: 15px; color: var(--muted); margin-top: 2px; }
+.mmark { flex: none; align-self: center; font-size: 10px; font-weight: 800; color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; padding: 0 6px; line-height: 16px; }
+
 </style>
 </head>
 <body>
@@ -781,6 +788,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       <div class="checks" id="edit-checks">
         <label class="check-row"><input id="edit-prio" type="checkbox"> Hohe Priorität</label>
         <label class="check-row" id="edit-frist-wrap"><input id="edit-frist" type="checkbox"> Frist</label>
+        <label class="check-row" id="edit-follow-wrap"><input id="edit-follow" type="checkbox"> Nachfassen</label>
       </div>
       <p class="hint" id="edit-where"></p>
       <fieldset class="subs">
@@ -933,6 +941,19 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
         <button type="button" id="sync-disconnect">Trennen</button>
         <p class="hint" id="sync-info"></p>
       </fieldset>
+      <fieldset id="ai-fields">
+        <legend>KI für „E-Mail → Aufgaben“ (optional)</legend>
+        <label>Anbieter
+          <select id="ai-provider">
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="openai">OpenAI</option>
+          </select>
+        </label>
+        <label>API-Schlüssel<input id="ai-key" type="password" autocomplete="off" spellcheck="false"></label>
+        <label>Modell<input id="ai-model" type="text" autocomplete="off" spellcheck="false"></label>
+        <p class="hint">Der Schlüssel bleibt nur auf diesem Gerät (kein Abgleich). Beim Zusammenfassen wird der E-Mail-Text an den Anbieter übertragen – vorher die Datenschutzregeln des Büros prüfen. Ohne Schlüssel arbeitet die Erkennung rein lokal nach Regeln und lernt aus deinen Korrekturen.</p>
+        <button type="button" id="ai-forget">Gelernte Korrekturen löschen</button>
+      </fieldset>
       <div class="dialog-actions">
         <span class="spacer"></span>
         <button type="submit" class="primary">Fertig</button>
@@ -945,10 +966,12 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   <dialog id="mail-dialog" class="drawer">
     <form method="dialog" id="mail-form">
       <h2>E-Mail → Aufgaben</h2>
-      <p class="hint">E-Mail-Text einfügen: Tagwerk erkennt Zusagen und Fristen (z. B. „bis zum 13.11.2026“) und schlägt Aufgaben vor. Das ist eine Texterkennung nach festen Regeln, keine KI – bitte die Vorschläge prüfen. Bitten an die Gegenseite („Bitte teilen Sie uns mit …“) sind als „Nachfassen“ vorgeschlagen, aber nicht angehakt.</p>
+      <p class="hint">E-Mail-Text einfügen: Tagwerk erkennt Zusagen, Fristen („bis zum 13.11.2026“) und Bitten an die Gegenseite und schlägt knappe Aufgaben vor; der Originalsatz wird als Notiz gespeichert. Änderungen an Text, Art und Auswahl vor dem Anlegen werden gelernt und beim nächsten Mal berücksichtigt (✦).</p>
       <label>Projekt <select id="mail-project"></select></label>
       <label>E-Mail-Text <textarea id="mail-text" rows="7" placeholder="E-Mail hier einfügen …"></textarea></label>
-      <div class="row2"><button type="button" id="mail-clear">Text leeren</button></div>
+      <div class="row2"><button type="button" id="mail-clear">Text leeren</button><button type="button" id="mail-ai" hidden>Mit KI zusammenfassen</button></div>
+      <p class="hint" id="mail-ai-hint">Optional: In den Einstellungen lässt sich ein eigener KI-Schlüssel hinterlegen; dann fasst ein Sprachmodell die Mail zusammen.</p>
+      <p class="hint" id="mail-learn-info"></p>
       <p id="mail-empty" class="hint" hidden>Keine Aufgaben erkannt. Du kannst den Text anpassen.</p>
       <ul id="mail-rows" class="mrows"></ul>
       <div class="dialog-actions">
@@ -993,8 +1016,9 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
         <li><b>Aufgaben aus Mitschriften</b>: Text oder Zeilen markieren und auf „→ Aufgabe“ klicken (oder Strg+Umschalt+A); ohne Markierung wird die aktuelle Zeile genommen. Der Text bleibt, die Zeile bekommt eine Marke ⟦T:…⟧ und erscheint in „Lesen“ als anklickbares „→ Aufgabe“ bzw. „✓ Aufgabe“. Teilnehmer lassen sich am Griff per Drag &amp; Drop sortieren; die Reihenfolge gilt auch in „Lesen“</li>
+        <li><b>Nachfassen</b>: Jedes Projekt hat rechts neben der ersten Liste eine Liste „Nachfassen“ für Rückmeldungen, auf die du wartest oder die du einholen willst (Aufgabe → Haken „Nachfassen“; Datum optional). Am Tag stehen die Aufgaben so: Fristen, Priorisierte, geplante Aufgaben, Nachfassen, interne Aufgaben. Beim Start ist kein Projekt aufgeklappt</li>
         <li><b>Neue Aufgabe (+)</b>: Der runde +-Button unten rechts öffnet die Seitenleiste mit allen Feldern (Titel, Projekt, Datum, Frist, Unteraufgaben, Notizen, Wiederholen). Wird der Titel leer gelassen, entsteht keine Aufgabe. Ein zweiter Klick auf dieselbe Aufgabe schließt ihre Seitenleiste wieder. Tagwerk merkt sich pro Gerät das zuletzt gewählte Projekt; auf dem Handy lässt sich endlos durch die Tage wischen</li>
-        <li><b>E-Mail → Aufgaben</b>: Mail-Symbol oben links → Projekt wählen, E-Mail-Text einfügen. Tagwerk schlägt Fristen („bis zum …“), Aufgaben mit Datum und Aufgaben ohne Datum vor (Regelerkennung, keine KI – bitte prüfen). Bitten an die Gegenseite sind als „Nachfassen“ vorgeschlagen, aber nicht angehakt. Jede Zeile ist änderbar</li>
+        <li><b>E-Mail → Aufgaben</b>: Mail-Symbol oben links → Projekt wählen, E-Mail-Text einfügen. Tagwerk schlägt Fristen („bis zum …“), Geplantes, Aufgaben ohne Datum und Nachfassen als knappe Stichpunkte vor (Originalsatz als Notiz). Jede Zeile ist änderbar; Änderungen werden gelernt und fließen beim nächsten Mal ein (✦). Optional kann in den Einstellungen ein eigener KI-Schlüssel (Anthropic/OpenAI) hinterlegt werden – dann fasst ein Sprachmodell die Mail zusammen und nutzt deine Korrekturen als Beispiele</li>
         <li><b>Datensicherheit</b>: Tagwerk legt auf jedem Gerät automatisch Sicherungen an (Symbol oben links mit den zwei Pfeilen → „Sicherungen / Wiederherstellung“). Fehlt etwas, zeigt die Liste „Fehlt jetzt: …“, ein Klick holt es zurück, ohne Vorhandenes zu überschreiben. Auch eine alte Datei (z. B. frühere OneDrive-Version von tagwerk.json) lässt sich so einlesen. Nicht gespeicherte Mitschriften kommen nach einem Neustart als Entwurf zurück</li>
         <li><b>Listen anordnen</b>: Im Projekt auf das Reihenfolge-Symbol klicken. Dann verschieben die Pfeile ‹ › an jeder Liste sie um eine Stelle, auch über Seitengrenzen; per Ziehen blättert die Ansicht weiter, wenn man am Rand oder auf den Seitenpfeilen kurz verweilt (gilt auch für Aufgaben)</li>
         <li><b>Projektleiste</b> unten: normale Projekte haben einen farbigen Balken, <b>interne</b> sind schraffiert und kursiv. Seitenfenster enden oberhalb der Leiste, alle Projekte bleiben erreichbar</li>
@@ -1086,6 +1110,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       todos: [],
       recurs: [],
       minutes: [], // Mitschriften von Besprechungen
+      learn: [], // Lernbeispiele (E-Mail → Aufgaben): bestätigte Zeilen samt Korrekturen
       deleted: {}, // Löschvermerke für den Abgleich: { id: Zeitpunkt }
       sync: { hashes: {}, etag: null, fp: null, last: null }, // nur lokal
       settings: { accent: DEFAULT_ACCENT, mode: 'auto', span: 'work' },
@@ -1129,6 +1154,25 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
 
   /** Jedes Projekt hat genau eine Liste „Fristen“ (deadline: true), ganz links. */
   function ensureDeadlineLists(s) {
+    ensureDeadlineOnly(s);
+    ensureFollowLists(s);
+  }
+  /** Jedes Projekt hat außerdem eine Liste „Nachfassen“ (followup: true), rechts neben der ersten Aufgabenliste. */
+  function ensureFollowLists(s) {
+    for (const p of s.projects) {
+      const mine = s.lists.filter((l) => l.projectId === p.id).sort((a, b) => a.order - b.order);
+      if (mine.some((l) => l.followup)) continue;
+      const named = mine.find((l) => /^(nachfassen|rückmeldungen?)$/i.test(l.name.trim()) && !l.deadline);
+      if (named) { named.followup = true; continue; }
+      const rest = mine.filter((l) => !l.deadline);
+      const base = rest[0];
+      let order;
+      if (!base) order = mine.length ? Math.max(...mine.map((l) => l.order)) + 1 : 2;
+      else { const next = rest[1]; order = next ? (base.order + next.order) / 2 : base.order + 1; }
+      s.lists.push({ id: 'nachfassen-' + p.id, projectId: p.id, name: 'Nachfassen', order, followup: true });
+    }
+  }
+  function ensureDeadlineOnly(s) {
     for (const p of s.projects) {
       const mine = s.lists.filter((l) => l.projectId === p.id);
       if (mine.some((l) => l.deadline)) continue;
@@ -1138,7 +1182,16 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       s.lists.push({ id: 'fristen-' + p.id, projectId: p.id, name: 'Fristen', order: mine.length ? min - 1 : 1, deadline: true });
     }
   }
-  const deadlineListIds = (state) => new Set(state.lists.filter((l) => l.deadline).map((l) => l.id));
+  const deadlineListIds = (state) => new Set((state.lists || []).filter((l) => l.deadline).map((l) => l.id));
+  const followListIds = (state) => new Set((state.lists || []).filter((l) => l.followup).map((l) => l.id));
+  const isFollow = (state, t) => !!t.listId && followListIds(state).has(t.listId);
+  /** Offene Aufgaben einer Nachfassen-Liste: erst die mit Datum (nach Datum), dann die ohne. */
+  function followOf(state, listId) {
+    return state.todos.filter((t) => t.listId === listId && !t.done).sort((a, b) => {
+      if (!!a.date !== !!b.date) return a.date ? -1 : 1;
+      return a.date !== b.date ? (a.date < b.date ? -1 : 1) : a.order - b.order;
+    });
+  }
   const isDeadline = (state, t) => !!t.listId && deadlineListIds(state).has(t.listId);
   /** Offene Fristen einer Fristen-Liste, nach Datum. */
   function fristenOf(state, listId) {
@@ -1200,10 +1253,11 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
    */
   const KNOWN = {
     project: ['id', 'name', 'code', 'color', 'updatedAt', 'order', 'internal', 'trashed', 'trashedAt', 'archived', 'archivedAt', 'status', 'statusLevel', 'statusAt'],
-    list: ['id', 'projectId', 'name', 'order', 'deadline', 'updatedAt'],
+    list: ['id', 'projectId', 'name', 'order', 'deadline', 'followup', 'updatedAt'],
     todo: ['id', 'text', 'date', 'listId', 'projectId', 'done', 'order', 'origDate', 'doneAt', 'recurId', 'prio', 'updatedAt', 'notes', 'subtasks'],
     recur: ['id', 'text', 'projectId', 'freq', 'interval', 'start', 'through', 'until', 'prio', 'updatedAt', 'notes', 'subtasks'],
     minute: ['id', 'projectId', 'title', 'date', 'start', 'end', 'participants', 'body', 'updatedAt'],
+    learn: ['id', 'kind', 'src', 'f', 'k', 'inc', 'date', 'text', 'sug', 'pre', 'sk', 'updatedAt'],
   };
   function carryExtra(src, dst, known) {
     for (const k of Object.keys(src)) {
@@ -1249,6 +1303,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
         if (l && typeof l.id === 'string' && typeof l.name === 'string' && projectIds.has(l.projectId)) {
           const list = { id: l.id, projectId: l.projectId, name: l.name, order: Number.isFinite(l.order) ? l.order : s.lists.length + 1 };
           if (l.deadline) list.deadline = true;
+          if (l.followup && !l.deadline) list.followup = true;
           if (Number.isFinite(l.updatedAt)) list.updatedAt = l.updatedAt;
           carryExtra(l, list, KNOWN.list);
           s.lists.push(list);
@@ -1335,6 +1390,19 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
         s.minutes.push(min);
       }
     }
+    if (Array.isArray(raw.learn)) {
+      for (const e of raw.learn) {
+        if (!e || typeof e.id !== 'string' || typeof e.src !== 'string') continue;
+        const it = { id: e.id, kind: typeof e.kind === 'string' ? e.kind : 'mail', src: e.src.slice(0, 600), f: Array.isArray(e.f) ? e.f.filter((x) => typeof x === 'string').slice(0, 80) : [],
+          k: typeof e.k === 'string' ? e.k : 'offen', inc: e.inc !== false, date: typeof e.date === 'string' ? e.date : null,
+          text: typeof e.text === 'string' ? e.text.slice(0, 300) : '', sug: typeof e.sug === 'string' ? e.sug.slice(0, 300) : '', pre: typeof e.pre === 'string' ? e.pre : '', sk: typeof e.sk === 'string' ? e.sk : '' };
+        if (Number.isFinite(e.updatedAt)) it.updatedAt = e.updatedAt;
+        carryExtra(e, it, KNOWN.learn);
+        s.learn.push(it);
+      }
+      // Nur die jüngsten 400 Beispiele behalten
+      if (s.learn.length > 400) { s.learn.sort((a, b) => (a.updatedAt || 0) - (b.updatedAt || 0)); s.learn = s.learn.slice(-400); }
+    }
     if (raw.deleted && typeof raw.deleted === 'object') {
       for (const [id, at] of Object.entries(raw.deleted)) if (Number.isFinite(at)) s.deleted[id] = at;
     }
@@ -1351,8 +1419,8 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   }
 
   // ---------- Abgleich zwischen Geräten ----------
-  const APP = 20261105; // Stand des Programms; wandert in die Abgleich-Datei, damit veraltete Geräte sich erneuern
-  const COLS = ['projects', 'lists', 'todos', 'recurs', 'minutes'];
+  const APP = 20261107; // Stand des Programms; wandert in die Abgleich-Datei, damit veraltete Geräte sich erneuern
+  const COLS = ['projects', 'lists', 'todos', 'recurs', 'minutes', 'learn'];
   const TOMBSTONE_DAYS = 90;
   function stable(v) {
     if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
@@ -1378,7 +1446,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const next = {};
     let changed = false;
     for (const col of COLS) {
-      for (const item of state[col]) {
+      for (const item of state[col] || []) {
         const h = hashItem(item);
         next[item.id] = h;
         if (prev[item.id] !== h || !Number.isFinite(item.updatedAt)) {
@@ -1399,9 +1467,9 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   /** Nach „Rückgängig“: alles, was sich gegenüber `oldState` unterscheidet, gilt als jetzt geändert (und nicht als gelöscht). */
   function markChanged(newState, oldState, now) {
     const old = new Map();
-    for (const col of COLS) for (const it of oldState[col]) old.set(it.id, hashItem(it));
+    for (const col of COLS) for (const it of oldState[col] || []) old.set(it.id, hashItem(it));
     for (const col of COLS) {
-      for (const it of newState[col]) {
+      for (const it of newState[col] || []) {
         if (old.get(it.id) !== hashItem(it)) { it.updatedAt = now; delete newState.deleted[it.id]; }
       }
     }
@@ -1413,8 +1481,9 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   function revertChanges(cur, before, after, now) {
     const clone = (x) => JSON.parse(JSON.stringify(x));
     for (const col of COLS) {
-      const b = new Map(before[col].map((x) => [x.id, x]));
-      const a = new Map(after[col].map((x) => [x.id, x]));
+      const b = new Map((before[col] || []).map((x) => [x.id, x]));
+      const a = new Map((after[col] || []).map((x) => [x.id, x]));
+      if (!cur[col]) cur[col] = [];
       for (const [id, bi] of b) {
         const ai = a.get(id);
         if (ai && hashItem(ai) === hashItem(bi)) continue; // von der Aktion nicht berührt
@@ -1440,9 +1509,9 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   function restoreMissing(cur, old, now, apply) {
     const out = {};
     const have = new Set();
-    for (const col of COLS) for (const it of cur[col]) have.add(it.id);
+    for (const col of COLS) for (const it of cur[col] || []) have.add(it.id);
     // Projekte zuerst, damit Mitschriften und Aufgaben einen Platz haben
-    for (const col of ['projects', 'lists', 'recurs', 'todos', 'minutes']) {
+    for (const col of ['projects', 'lists', 'recurs', 'todos', 'minutes', 'learn']) {
       out[col] = 0;
       for (const it of old[col] || []) {
         if (have.has(it.id)) continue;
@@ -1460,13 +1529,13 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   /** Hält Merkzettel und Stand der Elemente zusammen (nach dem Übernehmen von Fremddaten). */
   function rehash(state) {
     const next = {};
-    for (const col of COLS) for (const item of state[col]) next[item.id] = hashItem(item);
+    for (const col of COLS) for (const item of state[col] || []) next[item.id] = hashItem(item);
     state.sync.hashes = next;
   }
   /** Fingerabdruck dessen, was zwischen Geräten abgeglichen wird (Elemente + Zeitstempel + Löschvermerke). */
   function fingerprint(state) {
     const parts = [];
-    for (const col of COLS) for (const it of state[col]) parts.push(it.id + ':' + (it.updatedAt || 0));
+    for (const col of COLS) for (const it of state[col] || []) parts.push(it.id + ':' + (it.updatedAt || 0));
     for (const [id, at] of Object.entries(state.deleted)) parts.push('x' + id + ':' + at);
     return hashString(parts.sort().join('|'));
   }
@@ -1474,12 +1543,12 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   function isPristine(state) {
     return !state.todos.length && !state.recurs.length && !state.minutes.length && state.projects.length === 1 && state.projects[0].name === 'Meine Listen'
       && !Object.keys(state.deleted).length
-      && state.lists.every((l) => l.deadline || DEFAULT_LISTS.includes(l.name));
+      && state.lists.every((l) => l.deadline || l.followup || DEFAULT_LISTS.includes(l.name));
   }
   /** Fasst pro Projekt mehrere Fristen-Listen (auf zwei Geräten getrennt entstanden) zu einer zusammen. */
   function dedupeDeadlineLists(state) {
-    for (const p of state.projects) {
-      const dl = state.lists.filter((l) => l.projectId === p.id && l.deadline).sort((a, b) => (a.id < b.id ? -1 : 1));
+    for (const flag of ['deadline', 'followup']) for (const p of state.projects) {
+      const dl = state.lists.filter((l) => l.projectId === p.id && l[flag]).sort((a, b) => (a.id < b.id ? -1 : 1));
       if (dl.length < 2) continue;
       const keep = dl[0];
       for (const extra of dl.slice(1)) {
@@ -1495,15 +1564,15 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const out = { version: 2, settings: local.settings, deleted, sync: Object.assign({}, local.sync) };
     for (const col of COLS) {
       const byId = new Map();
-      for (const it of remote[col]) byId.set(it.id, it);
+      for (const it of remote[col] || []) byId.set(it.id, it);
       const items = [];
       const seen = new Set();
-      for (const it of local[col]) {
+      for (const it of local[col] || []) {
         const other = byId.get(it.id);
         seen.add(it.id);
         items.push(other && (other.updatedAt || 0) > (it.updatedAt || 0) ? other : it);
       }
-      for (const it of remote[col]) if (!seen.has(it.id)) items.push(it);
+      for (const it of remote[col] || []) if (!seen.has(it.id)) items.push(it);
       out[col] = items.filter((it) => !(deleted[it.id] >= (it.updatedAt || 0)));
     }
     for (const col of COLS) for (const it of out[col]) if (deleted[it.id] < (it.updatedAt || 0)) delete deleted[it.id];
@@ -1515,7 +1584,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   }
   /** Der Inhalt, der in die Datei im Netz geschrieben wird (ohne lokalen Sync-Stand und ohne gerätespezifische Einstellungen). */
   function uploadText(state) {
-    const o = { version: 2, app: APP, projects: state.projects, lists: state.lists, todos: state.todos, recurs: state.recurs, minutes: state.minutes, deleted: state.deleted };
+    const o = { version: 2, app: APP, projects: state.projects, lists: state.lists, todos: state.todos, recurs: state.recurs, minutes: state.minutes, learn: state.learn || [], deleted: state.deleted };
     return JSON.stringify(o);
   }
 
@@ -1598,11 +1667,17 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
 
   /** IDs archivierter Projekte – ihre Aufgaben erscheinen weder im Kalender noch in Suche und „Erledigt“. */
   function archivedIds(state) { return new Set(state.projects.filter((p) => p.archived || p.trashed).map((p) => p.id)); }
+  /** Tagesreihenfolge: Fristen, Priorisierte, geplante Aufgaben, Nachfassen, interne Aufgaben. */
+  function dayRank(state, intern) {
+    const dl = deadlineListIds(state), fl = followListIds(state);
+    intern = intern || internalIds(state);
+    return (t) => (t.listId && dl.has(t.listId) ? 0 : t.prio ? 1 : t.listId && fl.has(t.listId) ? 3 : intern.has(t.projectId) ? 4 : 2);
+  }
   function todosOnDate(state, iso) {
     const arch = archivedIds(state);
     const intern = internalIds(state);
-    const tier = (t) => (t.prio ? 0 : intern.has(t.projectId) ? 2 : 1);
-    return state.todos.filter((t) => t.date === iso && !t.done && !arch.has(t.projectId)).sort((a, b) => (tier(a) - tier(b)) || a.order - b.order);
+    const rank = dayRank(state, intern);
+    return state.todos.filter((t) => t.date === iso && !t.done && !arch.has(t.projectId)).sort((a, b) => (rank(a) - rank(b)) || a.order - b.order);
   }
   function internalIds(state) { return new Set(state.projects.filter((p) => p.internal).map((p) => p.id)); }
   function todosInList(state, listId) {
@@ -1657,7 +1732,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   /** Alle offenen, datierten Aufgaben eines Projekts, nach Datum sortiert ("Geplant"). */
   function plannedForProject(state, projectId) {
     return state.todos
-      .filter((t) => t.projectId === projectId && t.date && !t.done && !isDeadline(state, t))
+      .filter((t) => t.projectId === projectId && t.date && !t.done && !isDeadline(state, t) && !isFollow(state, t))
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.order - b.order));
   }
 
@@ -1707,8 +1782,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const list = todosOnDate(state, iso).filter((x) => x.id !== id);
     const i = index == null ? list.length : Math.max(0, Math.min(index, list.length));
     // Priorisierte stehen immer oben: die Reihenfolge wird nur innerhalb der eigenen Gruppe bestimmt.
-    const intern = internalIds(state);
-    const tier = (x) => (x.prio ? 0 : intern.has(x.projectId) ? 2 : 1);
+    const tier = dayRank(state);
     const group = list.filter((x) => tier(x) === tier(t));
     t.order = orderForIndex(group, list.slice(0, i).filter((x) => tier(x) === tier(t)).length);
     if (t.date !== iso) delete t.origDate;
@@ -1934,13 +2008,20 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
 
 
   // ---------- E-Mail-Text → Aufgabenvorschläge ----------
-  const MAIL_VERB = /(liefer|send|übersend|übermittel|vorleg|\bleg\w* .*\bvor\b|einreich|übergeb|übergab|überreich|erstell|einarbeit|arbeit\w* .*\bein\b|prüf|abstimm|nachreich|zuarbeit|klär|anfrag|beauftrag|freigab|fertigstell|abgeben|schick|terminier|vereinbar|organisier|benötig|mitteil|bestätig|zusend|aufstell|\bstell\w* .*\bauf\b|\bpass\w* .*\ban\b|anpass|überarbeit|ergänz|korrigier|rückmeld|zurückmeld|bereitstell|abschließ|durchführ|beantrag|vorbereit|bitte|bitten|nachfass|erinner|einplan|berücksichtig|vorlage)/i;
-  const MAIL_SKIP = /(klarstellung|\bbetraf\b|bezog ich|halten wir fest|ziehen wir .* zurück|zur kenntnis|vielen dank|sehr geehrte|freundliche|hochachtung|bei rückfragen|mit besten|beste grüße|viele grüße|anbei finden)/i;
+  const MAIL_VERB = /(liefer|send|übersend|übermittel|vorleg|\bleg\w* .*\bvor\b|einreich|übergeb|übergab|überreich|erstell|einarbeit|arbeit\w* .*\bein\b|prüf|abstimm|nachreich|zuarbeit|klär|anfrag|beauftrag|freigab|fertigstell|abgeben|schick|terminier|vereinbar|organisier|benötig|brauch|erwart|erhalt|mitteil|bestätig|zusend|aufstell|\bstell\w* .*\bauf\b|\bpass\w* .*\ban\b|anpass|überarbeit|ergänz|korrigier|rückmeld|zurückmeld|bereitstell|abschließ|durchführ|beantrag|vorbereit|bitte|bitten|nachfass|erinner|einplan|berücksichtig|vorlage|umsetz|\bsetz\w* .*\bum\b|einhalt|\bhalt\w* .*\bein\b|zurückzieh|\bzieh\w* .*\bzurück\b|verwend|entscheid)/i;
+  const MAIL_SKIP = /(klarstellung|\bbetraf\b|bezog ich|halten wir fest|zur kenntnis|vielen dank|sehr geehrte|freundliche|hochachtung|bei rückfragen|mit besten|beste grüße|viele grüße|anbei finden|ist das korrekt|ziel ist|nehmen wir .*kenntnis|verfahren wir wie)/i;
   const MAIL_COND = /^(bei|wenn|falls|sollte|sofern|ab)\b/i;
   const MAIL_ASK = /\b(bitte|bitten|bittet|bitt)\b/i;
+  // Wir warten auf etwas von der Gegenseite → Nachfassen (auch mit Datum)
+  const MAIL_WAIT = /\b(benötigen wir|brauchen wir|erwarten wir|erhalten wir|bitten wir|bitte ich|teilen sie .*mit|wir bitten|sie erhalten|von ihnen|durch sie|ihrerseits|rückmeldung|freigabe durch|entscheidung)\b/i;
   const MAIL_DEADLINE = /(\bbis( spätestens)?( zum| zu| zur| Ende| einschließlich| auf| zu dem)?|spätestens|\bFrist\b|\bvor dem\b|fällig|\bwährend\b)\s*(am|zum|dem|den)?\s*$/i;
   const MAIL_ABBR = /^(z|b|u|d|a|ca|nr|abs|kap|bzw|ggf|inkl|vgl|usw|etc|hr|fr|dr|prof|st|tel|bsp|evtl|sog|zzgl|ggü)$/i;
-  const MAIL_LABEL_STOP = /^(zunächst|ergänzend|außerdem|zudem|hinweis|bitte|vielen|wie|bei|mit|für|da|wenn|ob|dass|zu den|zur|zum|in|im|am|nach|vor|von)\b/i;
+  const MAIL_LABEL_STOP = /^(zunächst|ergänzend|außerdem|zudem|hinweis|bitte|vielen|wie|bei|mit|für|da|wenn|ob|dass|zu den|zur|zum|in|im|am|nach|vor|von|ziel)\b/i;
+  // Füllwörter, die in einer Kurzfassung nichts beitragen
+  const MAIL_FILLER = /\b(wie (in der vk|in der videokonferenz|besprochen|vereinbart|gewünscht|abgestimmt|angekündigt|zugesagt|üblich|bisher)( vereinbart| besprochen| abgestimmt)?|bereits|zunächst|nochmals|nochmal|hingegen|ergänzend|kurzfristige?n?|möglichst|gern|gerne|selbstverständlich|natürlich|hiermit|nun|daher|dann|auch|noch|jedoch|allerdings|grundsätzlich|entsprechend|umgehend|zeitnah|insgesamt|kurz|ebenfalls|wie folgt|im weiteren verfahren|in kürze|wie unten beschrieben|doch|also)\b/gi;
+  const MAIL_SUBCLAUSE = /,\s*(da|weil|um|damit|sodass|so dass|wobei|sofern|sobald|falls|wenn|nachdem|bevor|obwohl|also|sie erhalten|wie)\b.*$/i;
+  const MAIL_PARTICLES = 'ein|auf|an|vor|ab|zurück|um|nach|mit|fertig|bereit|durch|zu|aus|bei|weiter|fest|zusammen|frei|nachträglich';
+  const MAIL_FEATURE_WORDS = /[a-zäöüß]{3,}/g;
 
   function mailSentences(line) {
     const out = [];
@@ -1973,12 +2054,203 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     }
     return found;
   }
+  /** Partizip II → Infinitiv (geprüft → prüfen, eingearbeitet → einarbeiten, übersandt → übersenden). */
+  function mailInfinitive(part) {
+    const w = part.toLowerCase();
+    const irregular = { übersandt: 'übersenden', gesandt: 'senden', versandt: 'versenden', zugesandt: 'zusenden', gegeben: 'geben', übergeben: 'übergeben', abgegeben: 'abgeben', vorgelegt: 'vorlegen', beschrieben: 'beschreiben', entschieden: 'entscheiden', erhalten: 'erhalten', bestätigt: 'bestätigen', beantragt: 'beantragen' };
+    if (irregular[w]) return irregular[w];
+    const m = /^((?:[a-zäöü]+)?)ge([a-zäöüß]+?)(t|en)$/.exec(w);
+    if (!m) return null;
+    const stem = m[2];
+    return m[1] + stem + (/(er|el|e)$/.test(stem) ? 'n' : 'en');
+  }
+  const mailCap = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
+  function mailTidy(t) {
+    return t.replace(/\s+/g, ' ').replace(/\s+([,.;:])/g, '$1').replace(/[,;:\s]+$/g, '').replace(/^[,;:\s]+/, '').replace(/\(\s*\)/g, '').replace(/\s+/g, ' ').trim();
+  }
   /**
-   * Zerlegt einen E-Mail-Text in Vorschläge: Fristen („bis …“), Aufgaben mit Datum und Aufgaben ohne Datum.
-   * Regelbasiert und ohne Netz; die Vorschläge werden vor dem Anlegen geprüft.
-   * Ergebnis: [{ text, date|null, kind: 'frist'|'termin'|'offen', source, include }]
+   * Kurzfassung eines Satzes als Aufgabenstichpunkt („Kanallängsschnitt … liefern“ statt „… liefern wir bereits bis zum …“).
+   * Regelbasiert; `drop` sind gelernte Streichwörter (Kleinschreibung).
    */
-  function parseMail(raw, today) {
+  function mailSummary(sent, opts) {
+    opts = opts || {};
+    let t = ' ' + String(sent || '').replace(/\s+/g, ' ').trim() + ' ';
+    const today = opts.today || todayISO();
+    // Datumsangaben samt Vorwort entfernen
+    t = t.replace(/\b(bis( spätestens)?( zum| zu| zur| ende| einschließlich| auf| zu dem)?|spätestens|am|zum|vor dem|ab( dem)?|seit( dem)?)\s+(\d{1,2}\.\s?\d{1,2}\.(\s?\d{2,4})?)/gi, ' ');
+    t = t.replace(/\b(vom|am|seit)\s+\d{1,2}\.\s?\d{1,2}\.(\s?\d{2,4})?/gi, ' ');
+    t = t.replace(/\d{1,2}\.\s?\d{1,2}\.(\s?\d{4})?(?!\d)/g, ' ');
+    t = t.replace(/\b(in|ab|bis) kw\s?\d{1,2}\b/gi, ' ');
+    t = t.replace(/\s+/g, ' ');
+    // Klammern und Nebensätze (Begründungen) weg – sie bleiben in der Notiz erhalten
+    t = t.replace(/\s*\([^)]*\)/g, ' ');
+    t = t.replace(MAIL_SUBCLAUSE, '');
+    t = t.replace(/^\s*(da|weil|nachdem|sobald|wenn|falls|sofern|obwohl|sollte|soweit)\b[^,]*,\s*/i, '');
+    t = t.replace(/\s+/g, ' ').trim();
+    t = t.replace(/[.!?]+\s*$/, '').trim();
+    let m;
+    let out = null;
+    // „Bei einer Freigabe …“ → „Freigabe erhalten“
+    if ((m = /^(bei|nach|mit) (einer|der|ihrer|einem|dem)? ?(freigabe|rückmeldung|zustimmung|entscheidung|bestätigung|beauftragung|antwort|stellungnahme|auftragserteilung|genehmigung)\b(.*)$/i.exec(t))) out = mailCap(m[3]) + (m[4] && m[4].trim().split(/\s+/).length <= 6 ? ' ' + m[4].trim() : '') + ' erhalten';
+    // „Können/werden wir X verb“ → „X verb“
+    else if ((m = /^(?:(.*?),?\s)?(können|werden|wollen|möchten|müssen|sollen|dürfen) wir (?:ihnen )?(.+?)\s+([a-zäöüß]+)$/i.exec(t))) out = m[3] + ' ' + m[4] + (m[1] && m[1].split(/\s+/).length <= 4 ? ' (' + m[1] + ')' : '');
+    // „Bitte teilen Sie uns mit, ob …“ → „Klären: ob …“
+    else if ((m = /^bitte (teilen|geben) sie (uns|mir)( bitte)? (mit|bescheid|an|bekannt),?\s*(.*)$/i.exec(t))) out = 'Klären: ' + m[5];
+    else if ((m = /^bitte (senden|übersenden|übermitteln|schicken|stellen) sie (uns|mir)( bitte)? (.*?)( zur verfügung| zu| bereit)?$/i.exec(t))) out = m[4] + ' von der Gegenseite';
+    else if ((m = /^bitte (.*?)\s+sie\b\s*(.*)$/i.exec(t))) out = mailCap(m[2] + ' ' + m[1]);
+    // „Wir bitten X um Y“ → „Y von X“
+    else if ((m = /^wir bitten (.+?) um (.+)$/i.exec(t))) out = m[2] + ' von ' + m[1];
+    else if ((m = /^wir bitten um (.+)$/i.exec(t))) out = m[1] + ' von der Gegenseite';
+    // „X bitte ich, Y zu tun“ → „Y tun (X)“
+    else if ((m = /^(.+?) bitte ich,?\s+(.+?)\s+zu\s+([a-zäöüß]+)$/i.exec(t))) out = m[2] + ' ' + m[3] + ' (' + m[1].split(/\s+/).slice(0, 2).join(' ') + ')';
+    // Passiv: „X werden geprüft und eingearbeitet“ → „X prüfen und einarbeiten“
+    else if ((m = /^(.+?) (werden|wird|wurden|wurde) (.+)$/i.exec(t)) && /(ge\w+(t|en)|\w+(iert))\b/.test(m[3])) {
+      const verbs = [];
+      const rest = m[3].replace(/\b((?:[a-zäöü]+)?ge[a-zäöüß]+(?:t|en)|[a-zäöüß]+iert)\b/gi, (w) => { const inf = mailInfinitive(w) || w; verbs.push(inf); return ''; }).replace(/\bund\b\s*$/, '').replace(/^\s*(und|sowie)\b/, '');
+      out = m[1] + ' ' + mailTidy(rest) + ' ' + verbs.join(' und ');
+    }
+    // „Für X benötigen wir Y“ → „Y erhalten (für X)“
+    else if ((m = /^(?:(für|zur|zum) (.+?) )?(benötigen|brauchen|erwarten) wir (.+)$/i.exec(t))) out = m[4] + ' erhalten';
+    // „Die X verb wir (Ihnen) Y“ → „X Y verb“
+    else if ((m = /^(.+?) ([a-zäöüß]+(?:en|n|t)) wir\b\s*(?:ihnen |hessen mobil |ihnen allen )?(.*)$/i.exec(t)) && !/^(wir|die ergebnisse)$/i.test(m[1])) {
+      let obj = m[1], verb = m[2].toLowerCase(), rest = m[3];
+      const pm = new RegExp('\\b(' + MAIL_PARTICLES + ')$', 'i').exec(rest);
+      if (pm) { verb = pm[1].toLowerCase() + verb; rest = rest.slice(0, pm.index); }
+      out = obj + ' ' + rest + ' ' + verb;
+    }
+    // „verb wir (Ihnen) X“ (Satz beginnt mit Verb oder Umstandsangabe) → „X verb“
+    else if ((m = /^(?:(.*?),?\s)?([a-zäöüß]+(?:en|n)) wir\b\s*(?:ihnen |hessen mobil )?(.*)$/i.exec(t)) && m[2].length > 3) {
+      let verb = m[2].toLowerCase(), rest = m[3], lead = m[1] || '';
+      const pm = new RegExp('\\b(' + MAIL_PARTICLES + ')$', 'i').exec(rest);
+      if (pm) { verb = pm[1].toLowerCase() + verb; rest = rest.slice(0, pm.index); }
+      out = rest + ' ' + verb + (lead && lead.split(/\s+/).length <= 5 ? ' (' + lead.replace(/^(wie|bei|für|zur|zum|nach)\s+/i, '') + ')' : '');
+    }
+    // „Wir verb X“ → „X verb“
+    else if ((m = /^wir (\w+(?:en|n)) (.*)$/i.exec(t))) {
+      let verb = m[1].toLowerCase(), rest = m[2];
+      const pm = new RegExp('\\b(' + MAIL_PARTICLES + ')$', 'i').exec(rest);
+      if (pm) { verb = pm[1].toLowerCase() + verb; rest = rest.slice(0, pm.index); }
+      out = rest + ' ' + verb;
+    }
+    if (!out) out = t;
+    out = ' ' + out + ' ';
+    out = out.replace(MAIL_FILLER, ' ');
+    // Gelernte Streichwörter
+    if (opts.drop && opts.drop.length) {
+      const re = new RegExp('\\b(' + opts.drop.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b', 'gi');
+      out = out.replace(re, ' ');
+    }
+    out = mailTidy(out);
+    out = out.replace(/^(die|der|das|den|dem|des|eine|einen|einem|einer|ein|unsere|unseren|unser|unserem|unserer|ihre|ihren|ihrem|ihrer|diese|diesen|diesem|dieser|dieses)\s+/i, '');
+    out = out.replace(/\s+(und|sowie|oder)$/i, '').replace(/^(und|sowie|oder)\s+/i, '');
+    out = mailTidy(out);
+    if (out.length > 120) {
+      const cut = out.slice(0, 118);
+      out = cut.slice(0, Math.max(cut.lastIndexOf(' '), 60)) + '…';
+    }
+    return mailCap(out);
+  }
+
+  // ---------- Lernen aus Korrekturen ----------
+  /** Merkmale eines Satzes für die Einordnung (Wortstämme, kurz, plus Signale). */
+  function mailFeatures(sent, flags) {
+    flags = flags || {};
+    const f = new Set();
+    const words = String(sent || '').toLowerCase().match(MAIL_FEATURE_WORDS) || [];
+    for (const w of words) f.add('w:' + w.slice(0, 6));
+    if (flags.date) f.add('#date');
+    if (flags.deadlineWord) f.add('#bis');
+    if (MAIL_ASK.test(sent)) f.add('#bitte');
+    if (MAIL_WAIT.test(sent)) f.add('#wait');
+    if (/\bwir\b/i.test(sent)) f.add('#wir');
+    if (/\bsie\b/i.test(sent)) f.add('#sie');
+    if (MAIL_COND.test(sent.trim())) f.add('#cond');
+    if (/\b(werden|wird) \w+/i.test(sent)) f.add('#passiv');
+    return [...f];
+  }
+  const MAIL_KINDS = ['frist', 'termin', 'offen', 'nachfassen'];
+  /**
+   * Ein kleines, naives Bayes-Modell aus den bestätigten Zeilen (state.learn).
+   * Vorhersage: Art und ob die Zeile angelegt wird. Regeln dienen als Vorwissen,
+   * das mit wachsender Zahl ähnlicher Beispiele zurücktritt. Zusätzlich gelernt:
+   * Streichwörter (aus Kürzungen des Textes), ob das Präfix „Label:“ bleibt,
+   * und wörtliche Übernahmen bei wiederkehrenden Sätzen.
+   */
+  function mailModel(examples) {
+    const ex = (examples || []).filter((e) => e && e.kind === 'mail' && typeof e.src === 'string');
+    const kindCount = {}, incCount = { 1: 0, 0: 0 };
+    const fk = {}, fi = {};
+    const vocab = new Set();
+    const dropStat = {};
+    let prefixKept = 0, prefixDropped = 0;
+    const exact = new Map();
+    for (const e of ex) {
+      const feats = e.f && e.f.length ? e.f : mailFeatures(e.src, { date: !!e.date, deadlineWord: e.k === 'frist' });
+      const k = MAIL_KINDS.includes(e.k) ? e.k : 'offen';
+      const inc = e.inc === false ? 0 : 1;
+      kindCount[k] = (kindCount[k] || 0) + 1;
+      incCount[inc]++;
+      for (const f of feats) {
+        vocab.add(f);
+        fk[f] = fk[f] || {}; fk[f][k] = (fk[f][k] || 0) + 1;
+        fi[f] = fi[f] || { 1: 0, 0: 0 }; fi[f][inc]++;
+      }
+      if (typeof e.text === 'string' && typeof e.sug === 'string' && inc) {
+        const final = new Set((e.text.toLowerCase().match(MAIL_FEATURE_WORDS) || []));
+        for (const w of (e.sug.toLowerCase().match(MAIL_FEATURE_WORDS) || [])) {
+          dropStat[w] = dropStat[w] || { d: 0, k: 0 };
+          if (final.has(w)) dropStat[w].k++; else dropStat[w].d++;
+        }
+        if (e.pre) { if (e.text.toLowerCase().startsWith(e.pre.toLowerCase())) prefixKept++; else prefixDropped++; }
+      }
+      exact.set(e.src.replace(/\s+/g, ' ').trim().toLowerCase(), { text: inc && e.text ? e.text : null, kind: k, include: !!inc });
+    }
+    const n = ex.length;
+    const V = Math.max(1, vocab.size);
+    const drop = Object.entries(dropStat).filter(([, s]) => s.d + s.k >= 2 && s.d / (s.d + s.k) >= 0.7).map(([w]) => w);
+    const dropPrefix = prefixKept + prefixDropped >= 3 && prefixDropped / (prefixKept + prefixDropped) >= 0.7;
+    function predictKind(feats, ruleKind) {
+      if (n < 5) return { kind: ruleKind, learned: false };
+      const scores = {};
+      for (const k of MAIL_KINDS) {
+        let s = Math.log(((kindCount[k] || 0) + 1) / (n + MAIL_KINDS.length));
+        for (const f of feats) s += Math.log((((fk[f] || {})[k] || 0) + 0.5) / ((kindCount[k] || 0) + 0.5 * V));
+        if (k === ruleKind) s += Math.log(1 + 40 / (n + 10)); // Vorwissen aus den Regeln, tritt mit vielen Beispielen zurück
+        scores[k] = s;
+      }
+      const best = MAIL_KINDS.reduce((a, b) => (scores[b] > scores[a] ? b : a));
+      return { kind: best, learned: best !== ruleKind };
+    }
+    function predictInclude(feats, ruleInc) {
+      if (n < 5) return ruleInc;
+      const sc = {};
+      for (const inc of [1, 0]) {
+        let s = Math.log((incCount[inc] + 1) / (n + 2));
+        for (const f of feats) s += Math.log((((fi[f] || {})[inc] || 0) + 0.5) / (incCount[inc] + 0.5 * V));
+        if ((inc === 1) === !!ruleInc) s += Math.log(1 + 40 / (n + 10));
+        sc[inc] = s;
+      }
+      return sc[1] >= sc[0];
+    }
+    return { n, drop, dropPrefix, exact, predictKind, predictInclude };
+  }
+  /** Lernbeispiel aus einer bestätigten Zeile. `row` ist die Zeile nach den Änderungen des Nutzers, `sug` der ursprüngliche Vorschlag. */
+  function mailExample(row, sug, now) {
+    return {
+      id: uid(), kind: 'mail', src: String(row.source || '').slice(0, 600), f: row.features || [],
+      k: row.kind, inc: row.include !== false, date: row.date || null,
+      text: String(row.text || '').slice(0, 300), sug: sug ? String(sug.text || '').slice(0, 300) : '', pre: row.prefix || '',
+      sk: sug ? sug.kind : '', updatedAt: now,
+    };
+  }
+  /**
+   * Zerlegt einen E-Mail-Text in Vorschläge: Fristen („bis …“), Geplantes (Datum), Aufgaben ohne Datum
+   * und Nachfassen (Bitten an die Gegenseite, Dinge, auf die wir warten).
+   * Regelbasiert und ohne Netz; die Vorschläge werden vor dem Anlegen geprüft. Mit `model` (aus mailModel)
+   * fließen die bisherigen Korrekturen ein.
+   * Ergebnis: [{ text, date|null, kind, source, include, prefix, features, rule: {kind, include, text} }]
+   */
+  function parseMail(raw, today, model) {
     const rows = [];
     let heading = '';
     const lines = String(raw || '').replace(/\r/g, '').split('\n').map((x) => x.replace(/​/g, '').trim());
@@ -2001,22 +2273,38 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
           return Object.assign(d, { kind: dl ? 'frist' : (d.iso >= today ? 'termin' : 'ref') });
         });
         const usable = dates.filter((d) => d.kind !== 'ref');
-        const ask = MAIL_ASK.test(sent);
+        const askSent = MAIL_ASK.test(sent) || (MAIL_WAIT.test(sent) && !/\b(legen|liefern|senden|übersenden|übergeben|übermitteln|stellen|arbeiten) wir\b/i.test(sent));
         if (!usable.length && !MAIL_VERB.test(sent)) continue;
-        const pre = (ask ? 'Nachfassen: ' : '') + (prefix ? prefix + ': ' : '');
-        const clip = (t) => { const x = t.replace(/\s+/g, ' ').replace(/^[,;\s]+/, '').trim(); return x.length > 200 ? x.slice(0, 197) + '…' : x; };
         const cond = (t) => MAIL_COND.test(t.replace(/^\s+/, ''));
-        if (usable.length <= 1) {
-          const d = usable[0];
-          rows.push({ text: clip(pre + sent), date: d ? d.iso : null, kind: d ? d.kind : 'offen', source: sent, include: !ask && !cond(sent) });
-        } else {
+        const MAIL_WAITWORD = /^(bei|nach|mit) (einer|der|ihrer|einem|dem)? ?(freigabe|rückmeldung|zustimmung|entscheidung|bestätigung|beauftragung|antwort|stellungnahme|auftragserteilung|genehmigung)\b/i;
+        let carry = '';
+        const push = (seg, d, cont) => {
+          const waiting = MAIL_WAITWORD.test(seg.trim());
+          const ask = askSent || waiting;
+          const ruleKind = ask ? 'nachfassen' : d ? d.kind : 'offen';
+          const feats = mailFeatures(seg, { date: !!d, deadlineWord: !!d && d.kind === 'frist' });
+          const ruleInc = waiting || !cond(seg);
+          const pre = prefix && !(model && model.dropPrefix) ? prefix + ': ' : '';
+          const key = seg.replace(/\s+/g, ' ').trim().toLowerCase();
+          let sum = mailSummary(seg, { today, drop: model ? model.drop : [] });
+          // Folgeabschnitt eines Satzes mit mehreren Daten ohne eigenes Verb: Verb des ersten Abschnitts übernehmen
+          if (cont && carry && !/\b(wir|sie)\b/i.test(seg) && !MAIL_VERB.test(seg)) sum = sum.replace(/^(.+?)(\s*\(.*\))?$/, '$1 ' + carry + '$2');
+          if (!cont) { const vm = /\b([a-zäöüß]+(?:en|n))\s*(\(.*\))?$/i.exec(sum); carry = vm && !/^(und|von|den|dem|einen|einem)$/.test(vm[1]) ? vm[1] : ''; }
+          const seen = model && model.exact.get(key);
+          const summary = seen && seen.text ? seen.text : pre + sum;
+          const pk = seen ? { kind: seen.kind, learned: seen.kind !== ruleKind } : model ? model.predictKind(feats, ruleKind) : { kind: ruleKind, learned: false };
+          const inc = seen ? seen.include : model ? model.predictInclude(feats, ruleInc) : ruleInc;
+          rows.push({ text: summary, date: d ? d.iso : null, kind: pk.kind, source: seg.trim(), include: inc, prefix: prefix ? prefix + ': ' : '', features: feats,
+            rule: { kind: ruleKind, include: ruleInc, text: pre + mailSummary(seg, { today }) }, learned: !!seen || pk.learned || inc !== ruleInc });
+        };
+        if (usable.length <= 1) push(sent, usable[0], false);
+        else {
           let from = 0;
           usable.forEach((d, i) => {
             const to = i === usable.length - 1 ? sent.length : d.end;
             let seg = sent.slice(from, to).replace(/^[,;\s]+/, '');
-            const cont = i > 0 && /^(und|sowie|oder)\s/i.test(seg);
-            if (cont) seg = '… ' + seg.replace(/^(und|sowie|oder)\s+/i, '');
-            rows.push({ text: clip(pre + seg), date: d.iso, kind: d.kind, source: sent, include: !ask && !cond(seg) });
+            seg = seg.replace(/^(und|sowie|oder)\s+/i, '');
+            push(seg, d, i > 0);
             from = d.end;
           });
         }
@@ -2029,7 +2317,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   return {
     DAYS_VISIBLE, DEFAULT_ACCENT, FREQS,
     toISO, parseISO, addDays, daysBetween, todayISO, visibleDays, uid,
-    emptyState, normalize, ensureDefaults, monthStart, addMonths, monthGrid, ensureDeadlineLists, touch, markChanged, revertChanges, restoreMissing, rehash, fingerprint, isPristine, merge, uploadText, hashItem, isDeadline, fristenOf, overdueFristen, daysForSpan, workdayFrom, stepWorkday, isWeekend, SPANS, doneTodos, openCountForProject, reorderSubtasks, weekStart, deriveCode, cleanCode, cleanSubs, subtaskProgress,
+    emptyState, normalize, ensureDefaults, monthStart, addMonths, monthGrid, ensureDeadlineLists, ensureFollowLists, followOf, isFollow, dayRank, mailSummary, mailFeatures, mailModel, mailExample, MAIL_KINDS, touch, markChanged, revertChanges, restoreMissing, rehash, fingerprint, isPristine, merge, uploadText, hashItem, isDeadline, fristenOf, overdueFristen, daysForSpan, workdayFrom, stepWorkday, isWeekend, SPANS, doneTodos, openCountForProject, reorderSubtasks, weekStart, deriveCode, cleanCode, cleanSubs, subtaskProgress,
     todosOnDate, todosInList, listsOf, plannedForProject, nextOrder, nextOrderInList,
     rollover, orderForIndex, moveTodo, moveToList, reorderLists,
     occursOn, materialize, virtualOn, search,
@@ -2638,7 +2926,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
 
   let state = L.emptyState();
   let today = L.todayISO();
-  const ui = { offset: 0, view: 'week', month: null, mode: 'open', projectId: null, page: 0, reorder: false, renamingList: null, focus: null, showDone: false, mStart: null, mCount: 0, mTarget: null };
+  const ui = { offset: 0, view: 'week', month: null, mode: 'closed', projectId: null, page: 0, reorder: false, renamingList: null, focus: null, showDone: false, mStart: null, mCount: 0, mTarget: null };
   let drag = null; // {kind:'todo'|'list', id}
 
   let saveTimer = null;
@@ -2744,6 +3032,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     return b;
   }
 
+  const isFollow = (t) => !t.done && !!t.listId && !!(listById(t.listId) && listById(t.listId).followup);
   const isFrist = (t) => !t.done && !!t.listId && !!(listById(t.listId) && listById(t.listId).deadline);
   const span = () => state.settings.span || 'work';
   /** Datum anzeigen; Wochenenden brauchen die 7-Tage-Ansicht. */
@@ -2827,7 +3116,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const list = where.listId ? listById(where.listId) : null;
     const projectId = parsed.projectId !== undefined ? parsed.projectId : list ? list.projectId : null;
     if (list && parsed.date === undefined) date = null;
-    const ask = !!list && parsed.date === undefined; // in Listen ohne @Datum: nachfragen
+    const ask = !!list && !list.followup && parsed.date === undefined; // in Listen ohne @Datum: nachfragen (Nachfassen: Datum optional)
     if (list && list.deadline && !date) date = L.addDays(today, 7); // Vorschlag für Fristen, im Dialog änderbar
     if (!date && !list) date = today;
     const todo = {
@@ -2909,7 +3198,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-11-06 · Monat am Handy, Datum Heute/Morgen, Seitenleiste gleitet hinaus';
+  const BUILD = '2026-11-07 · E-Mail-Erkennung: Kurzfassungen, lernt aus Korrekturen, optional KI';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -3262,7 +3551,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   // ---------- Aufgabenzeile ----------
   /** Legt aus Mitschrift-Text eine Aufgabe im Projekt an (ohne Datum: Liste „Aufgaben“ des Projekts). */
   function taskFromText(text, projectId) {
-    const list = L.listsOf(state, projectId).find((l) => !l.deadline);
+    const list = L.listsOf(state, projectId).find((l) => !l.deadline && !l.followup);
     const todo = { id: L.uid(), text: text.slice(0, 500), date: list ? null : today, listId: list ? list.id : null, projectId, done: false,
       order: list ? L.nextOrderInList(state, list.id) : L.nextOrder(state, today) };
     state.todos.push(todo);
@@ -3312,7 +3601,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const heading = L.isHeading(t.text);
     const p = t.projectId ? projectById(t.projectId) : null;
     const frist = isFrist(t);
-    const li = h('li', { class: 'todo' + (t.done ? ' done' : '') + (heading ? ' heading' : '') + (frist ? ' frist' : '') + (opts.overdue ? ' overdue' : '') + (p && p.internal && !t.prio && !frist ? ' internal' : ''), 'data-id': t.id, draggable: t.done || opts.overdue ? null : 'true', tabindex: '0', title: 'Klicken für Details' });
+    const li = h('li', { class: 'todo' + (t.done ? ' done' : '') + (heading ? ' heading' : '') + (frist ? ' frist' : '') + (isFollow(t) ? ' follow' : '') + (opts.overdue ? ' overdue' : '') + (p && p.internal && !t.prio && !frist && !isFollow(t) ? ' internal' : ''), 'data-id': t.id, draggable: t.done || opts.overdue ? null : 'true', tabindex: '0', title: 'Klicken für Details' });
     const meta = indicators(t);
     if (!t.done && t.origDate && t.origDate !== t.date) {
       meta.push(h('span', { class: 'carried', title: 'Weitergeschoben von ' + fmtShort.format(L.parseISO(t.origDate)) }, '↪'));
@@ -3350,7 +3639,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   function monthChip(t, overdue) {
     const heading = L.isHeading(t.text);
     const p = t.projectId ? projectById(t.projectId) : null;
-    const li = h('li', { class: 'mchip' + (heading ? ' heading' : '') + (isFrist(t) ? ' frist' : '') + (overdue ? ' overdue' : '') + (p && p.internal && !t.prio ? ' internal' : ''), 'data-id': t.id, draggable: overdue ? null : 'true', title: 'Klicken für Details' },
+    const li = h('li', { class: 'mchip' + (heading ? ' heading' : '') + (isFrist(t) ? ' frist' : '') + (isFollow(t) ? ' follow' : '') + (overdue ? ' overdue' : '') + (p && p.internal && !t.prio && !isFollow(t) ? ' internal' : ''), 'data-id': t.id, draggable: overdue ? null : 'true', title: 'Klicken für Details' },
       heading ? null : checkBox(t, 'small'),
       overdue ? h('span', { class: 'frist-flag' }, '!') : null,
       h('span', { class: 'mtext' }, t.prio && !heading ? h('span', { class: 'prio' }, '!') : null, rich(heading ? L.headingText(t.text) : t.text)),
@@ -3596,6 +3885,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
 
   function deleteList(l) {
     if (l.deadline) { toast('Die Liste „Fristen“ gehört zu jedem Projekt und kann nicht gelöscht werden.'); return; }
+    if (l.followup) { toast('Die Liste „Nachfassen“ gehört zu jedem Projekt und kann nicht gelöscht werden.'); return; }
     const n = L.todosInList(state, l.id).length;
     if (n && !window.confirm('Liste „' + l.name + '“ mit ' + n + ' Aufgabe(n) löschen?')) return;
     withUndo('Liste gelöscht.', () => {
@@ -3899,7 +4189,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   }
 
   function listColumn(l) {
-    const items = h('ul', { class: 'items' }, (l.deadline ? L.fristenOf(state, l.id) : L.todosInList(state, l.id)).map((t) => todoItem(t, l.deadline ? { datePrefix: true } : {})));
+    const items = h('ul', { class: 'items' }, (l.deadline ? L.fristenOf(state, l.id) : l.followup ? L.followOf(state, l.id) : L.todosInList(state, l.id)).map((t) => todoItem(t, l.deadline || l.followup ? { datePrefix: true } : {})));
     let headContent;
     if (ui.renamingList === l.id) {
       const inp = h('input', { class: 'head-input', type: 'text', maxlength: '40', 'data-focus': 'rename', 'aria-label': 'Listenname' });
@@ -3928,7 +4218,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const ci = customs.findIndex((x) => x.id === l.id);
     const mv = (dir, label, glyph) => h('button', { type: 'button', class: 'lmv', title: label, 'aria-label': label, disabled: ci + dir < 0 || ci + dir >= customs.length ? true : null, onclick: () => moveListBy(l, dir) }, glyph);
     const head = h('div', { class: 'list-head' + (ui.reorder ? ' draggable' : '') },
-      ui.reorder && !l.deadline ? h('button', { type: 'button', class: 'x', title: 'Liste löschen', 'aria-label': 'Liste löschen', onclick: () => deleteList(l) }, '×') : null,
+      ui.reorder && !l.deadline && !l.followup ? h('button', { type: 'button', class: 'x', title: 'Liste löschen', 'aria-label': 'Liste löschen', onclick: () => deleteList(l) }, '×') : null,
       ui.reorder && !l.deadline ? h('span', { class: 'lmove' }, mv(-1, 'Liste nach links (auch auf die vorige Seite)', '‹'), mv(1, 'Liste nach rechts (auch auf die nächste Seite)', '›')) : null,
       headContent);
     const col = h('section', { class: 'list-col', 'data-list': l.id }, head, items, fillArea('list-' + l.id, true, (raw) => addTodo(raw, { listId: l.id })));
@@ -4032,7 +4322,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
           return;
         }
         if (!drag || drag.kind !== 'todo') return;
-        const first = L.listsOf(state, p.id).find((l) => !l.deadline);
+        const first = L.listsOf(state, p.id).find((l) => !l.deadline && !l.followup);
         if (!first) { toast('Dieses Projekt hat noch keine Liste.'); return; }
         L.moveToList(state, drag.id, first.id, null);
         drag = null;
@@ -4641,6 +4931,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       ...state.projects.filter((p) => (!p.archived && !p.trashed) || p.id === projectId).map((p) => h('option', { value: p.id }, p.name)));
     sel.value = projectId || '';
     $('#edit-frist').checked = !!(listId && listById(listId) && listById(listId).deadline);
+    $('#edit-follow').checked = !!(listId && listById(listId) && listById(listId).followup);
     $('#edit-checks').hidden = ruleOnly;
     $('#edit-where').hidden = ruleOnly;
     editWhere();
@@ -4654,15 +4945,19 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   function editWhere() {
     const proj = $('#edit-project').value;
     const frist = $('#edit-frist');
-    frist.disabled = !proj;
-    if (!proj) frist.checked = false;
+    const follow = $('#edit-follow');
+    frist.disabled = !proj; follow.disabled = !proj;
+    if (!proj) { frist.checked = false; follow.checked = false; }
     const date = $('#edit-date').value;
     $('#edit-where').textContent = !proj ? 'Ohne Projekt: erscheint im Kalender' + (date ? '' : ' (heute)') + '.'
       : frist.checked ? 'Landet in „Fristen“ des Projekts (rot im Kalender).'
+      : follow.checked ? 'Landet in „Nachfassen“ des Projekts' + (date ? ' und am Tag im Kalender (unter den geplanten Aufgaben).' : ' (Datum ist optional).')
       : date ? 'Landet in „Geplant“ des Projekts und im Kalender.' : 'Ohne Datum: landet in „Aufgaben“ des Projekts.';
   }
-  ['#edit-project', '#edit-frist', '#edit-date'].forEach((sel) => $(sel).addEventListener('input', editWhere));
-  ['#edit-project', '#edit-frist', '#edit-date'].forEach((sel) => $(sel).addEventListener('change', editWhere));
+  ['#edit-project', '#edit-frist', '#edit-follow', '#edit-date'].forEach((sel) => $(sel).addEventListener('input', editWhere));
+  ['#edit-project', '#edit-frist', '#edit-follow', '#edit-date'].forEach((sel) => $(sel).addEventListener('change', editWhere));
+  $('#edit-frist').addEventListener('change', () => { if ($('#edit-frist').checked) { $('#edit-follow').checked = false; editWhere(); } });
+  $('#edit-follow').addEventListener('change', () => { if ($('#edit-follow').checked) { $('#edit-frist').checked = false; editWhere(); } });
   $('#edit-datequick').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-d]');
     if (!b) return;
@@ -4683,7 +4978,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   /** Großer +-Button: neue Aufgabe mit allen Feldern (Titel, Projekt, Datum, Frist, Unteraufgaben …). */
   function openNew() {
     const p = curProject();
-    const list = p ? L.listsOf(state, p.id).find((l) => !l.deadline) : null;
+    const list = p ? L.listsOf(state, p.id).find((l) => !l.deadline && !l.followup) : null;
     const t = { id: L.uid(), text: '', date: list ? null : today, listId: list ? list.id : null, projectId: p ? p.id : null, done: false,
       order: list ? L.nextOrderInList(state, list.id) : L.nextOrder(state, today) };
     state.todos.push(t);
@@ -4721,6 +5016,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       // Ziel: Frist → „Fristen“; Datum → „Geplant“ (kein Listenplatz); ohne Datum → „Aufgaben“ des Projekts
       const projId = $('#edit-project').value || null;
       const frist = $('#edit-frist').checked && !!projId;
+      const follow = !frist && $('#edit-follow').checked && !!projId;
       let date = $('#edit-date').value || null;
       let newList = null;
       if (projId) {
@@ -4729,9 +5025,12 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
           const dl = pl.find((l) => l.deadline);
           newList = dl ? dl.id : null;
           if (!date) date = L.addDays(today, 7);
+        } else if (follow) {
+          const fl = pl.find((l) => l.followup);
+          newList = fl ? fl.id : null;
         } else if (!date) {
           const cur = t.listId && listById(t.listId);
-          const keep = cur && cur.projectId === projId && !cur.deadline ? cur : pl.find((l) => !l.deadline);
+          const keep = cur && cur.projectId === projId && !cur.deadline && !cur.followup ? cur : pl.find((l) => !l.deadline && !l.followup);
           newList = keep ? keep.id : null;
         }
       }
@@ -4744,6 +5043,8 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       t.date = date;
       t.listId = newList;
       t.projectId = projId;
+      // Aufgabe in einer Liste gespeichert, die Listen sind aber eingeklappt: aufklappen, damit sie sichtbar ist
+      if (newList && ui.mode === 'closed') { ui.mode = 'open'; ui.projectId = projId; }
       const rule = t.recurId ? state.recurs.find((r) => r.id === t.recurId) : null;
       if (freq) {
         if (rule) { rule.freq = freq; rule.interval = interval; }
@@ -5027,8 +5328,14 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
 
 
   // ---------- E-Mail → Aufgaben ----------
-  const KIND_LABEL = { frist: 'Frist', termin: 'Aufgabe mit Datum', offen: 'Aufgabe ohne Datum' };
+  const KIND_LABEL = { frist: 'Frist', termin: 'Geplant (mit Datum)', offen: 'Aufgabe (ohne Datum)', nachfassen: 'Nachfassen / Rückmeldung' };
   let mailRows = [];
+  let mailSuggested = new Map(); // source → ursprünglicher Vorschlag (für das Lernen)
+  let mailModelCache = null;
+  function mailModel() {
+    if (!mailModelCache) mailModelCache = L.mailModel(state.learn || []);
+    return mailModelCache;
+  }
   function mailCount() { return mailRows.filter((r) => r.include && r.text.trim()).length; }
   function drawMailRows() {
     const box = $('#mail-rows');
@@ -5036,33 +5343,40 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       const date = h('input', { type: 'date', value: r.date || '', 'aria-label': 'Datum', onchange: (e) => { r.date = e.target.value || null; } });
       date.value = r.date || '';
       date.hidden = r.kind === 'offen';
-      const text = h('textarea', { rows: '3', class: 'mtext', 'aria-label': 'Text', maxlength: '500', oninput: (e) => { r.text = e.target.value; } });
+      const text = h('textarea', { rows: '2', class: 'mtext', 'aria-label': 'Text', maxlength: '500', oninput: (e) => { r.text = e.target.value; } });
       text.value = r.text;
       const kind = h('select', { 'aria-label': 'Art', onchange: (e) => {
         r.kind = e.target.value;
-        if (r.kind === 'offen') r.date = null; else if (!r.date) r.date = L.addDays(today, 7);
+        if (r.kind === 'offen') r.date = null; else if (!r.date && r.kind !== 'nachfassen') r.date = L.addDays(today, 7);
         date.value = r.date || ''; date.hidden = r.kind === 'offen';
       } }, Object.keys(KIND_LABEL).map((k) => h('option', { value: k }, KIND_LABEL[k])));
       kind.value = r.kind;
       const cb = h('input', { type: 'checkbox', 'aria-label': 'Anlegen', onchange: (e) => { r.include = e.target.checked; row.classList.toggle('off', !r.include); updateMailBtn(); } });
       cb.checked = r.include;
-      const row = h('li', { class: 'mrow' + (r.include ? '' : ' off') }, cb, h('div', { class: 'mfields' }, h('div', { class: 'mline' }, kind, date), text),
-        h('button', { type: 'button', class: 'mdel', title: 'Zeile entfernen', 'aria-label': 'Zeile entfernen', onclick: () => { mailRows = mailRows.filter((x) => x !== r); drawMailRows(); } }, '×'));
+      const src = r.source && r.source.trim() !== r.text.trim() ? h('div', { class: 'msrc', title: 'Originalsatz aus der E-Mail (wird als Notiz gespeichert)' }, r.source) : null;
+      const mark = r.ai ? h('span', { class: 'mmark', title: 'Vorschlag der KI' }, 'KI') : r.learned ? h('span', { class: 'mmark', title: 'Aus deinen bisherigen Korrekturen gelernt' }, '✦') : null;
+      const row = h('li', { class: 'mrow' + (r.include ? '' : ' off') }, cb, h('div', { class: 'mfields' }, h('div', { class: 'mline' }, kind, date, mark), text, src),
+        h('button', { type: 'button', class: 'mdel', title: 'Zeile entfernen', 'aria-label': 'Zeile entfernen', onclick: () => { r.removed = true; mailRows = mailRows.filter((x) => x !== r); mailRemoved.push(r); drawMailRows(); } }, '×'));
       return row;
     });
     box.replaceChildren(...out);
     $('#mail-empty').hidden = mailRows.length > 0 || !$('#mail-text').value.trim();
     updateMailBtn();
   }
+  let mailRemoved = [];
   function updateMailBtn() {
     const n = mailCount();
     const b = $('#mail-create');
     b.textContent = n ? n + ' Aufgabe' + (n === 1 ? '' : 'n') + ' anlegen' : 'Anlegen';
     b.disabled = !n || !$('#mail-project').value;
     $('#mail-project').classList.toggle('need', !$('#mail-project').value);
+    const m = mailModel();
+    $('#mail-learn-info').textContent = m.n ? 'Gelernt aus ' + m.n + ' bestätigten Zeilen' + (m.drop.length ? ', Streichwörter: ' + m.drop.slice(0, 6).join(', ') + (m.drop.length > 6 ? ' …' : '') : '') + '.' : 'Noch keine Korrekturen gelernt – jede Änderung vor dem Anlegen wird gemerkt.';
   }
   function analyseMail() {
-    mailRows = L.parseMail($('#mail-text').value, today);
+    mailRows = L.parseMail($('#mail-text').value, today, mailModel());
+    mailRemoved = [];
+    mailSuggested = new Map(mailRows.map((r) => [r.source, { text: r.text, kind: r.kind }]));
     drawMailRows();
   }
   function openMail(preset) {
@@ -5071,10 +5385,82 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     sel.replaceChildren(h('option', { value: '' }, '– Projekt wählen –'), ...activeProjects().map((p) => h('option', { value: p.id }, p.name)));
     sel.value = '';
     if (typeof preset === 'string') $('#mail-text').value = preset;
+    mailModelCache = null;
+    $('#mail-ai').hidden = !aiConfig().key;
+    $('#mail-ai-hint').hidden = !!aiConfig().key;
     placeDrawer(dlg, true);
     openDrawer(dlg, 'right');
     analyseMail();
     $('#mail-project').focus();
+  }
+  // --- Optionale KI (eigener Schlüssel, bleibt im Gerät) ---
+  const AI_KEY = 'tagwerk-ki';
+  const AI_DEFAULT_MODEL = { anthropic: 'claude-haiku-5-5', openai: 'gpt-4o-mini' };
+  function aiConfig() {
+    try { const c = JSON.parse(localStorage.getItem(AI_KEY) || '{}'); return { provider: c.provider || 'anthropic', key: c.key || '', model: c.model || '' }; } catch (e) { return { provider: 'anthropic', key: '', model: '' }; }
+  }
+  function saveAiConfig(c) { try { localStorage.setItem(AI_KEY, JSON.stringify(c)); } catch (e) { /* kein Speicher */ } }
+  function aiExamples() {
+    const ex = (state.learn || []).filter((e) => e.kind === 'mail' && e.inc && e.text).slice(-12);
+    const no = (state.learn || []).filter((e) => e.kind === 'mail' && !e.inc).slice(-4);
+    return [...ex, ...no].map((e) => 'Satz: ' + e.src + '\n→ ' + (e.inc ? JSON.stringify({ text: e.text, kind: e.k, date: e.date || null }) : 'keine Aufgabe')).join('\n');
+  }
+  function aiSystemPrompt(projectName) {
+    return [
+      'Du extrahierst Aufgaben aus einer E-Mail für ein deutsches Ingenieur- und Planungsbüro. Projekt: „' + projectName + '“. Heute ist ' + today + '.',
+      'Antworte NUR mit JSON: {"rows":[{"text":"…","kind":"frist|termin|offen|nachfassen","date":"JJJJ-MM-TT"|null,"source":"Originalsatz","include":true|false}]}',
+      'Arten: frist = Termin, bis zu dem WIR (das Büro) etwas liefern/erledigen müssen („bis zum …“); termin = Aufgabe an einem bestimmten Tag ohne Fristcharakter; offen = Zusage/Aufgabe ohne Datum; nachfassen = wir warten auf etwas von der Gegenseite (Freigabe, Entscheidung, Beauftragung, Antwort) oder bitten die Gegenseite um etwas – Datum hier nur, wenn genannt.',
+      'text: knapper Stichpunkt in Nominal-/Infinitivform, höchstens 12 Wörter, am Anfang das Thema als Präfix „Thema: “, wenn die Mail Überschriften oder Zeilenmarken hat (z. B. „Verkehrsführung: Verkehrszeichenplan fertigstellen“). Keine Höflichkeitsfloskeln, keine Kenntnisnahmen, keine Klarstellungen, keine reinen Informationen.',
+      'source: der Originalsatz wörtlich aus der Mail. include: false bei unsicheren oder bedingten Punkten („falls…“).',
+      'Ein Satz mit mehreren Terminen ergibt mehrere Zeilen. Vergangene Daten sind keine Termine.',
+      aiExamples() ? 'Beispiele, wie der Nutzer Zeilen bisher formuliert und eingeordnet hat (bitte Stil und Einordnung übernehmen):\n' + aiExamples() : '',
+    ].filter(Boolean).join('\n\n');
+  }
+  async function aiAnalyse() {
+    const cfg = aiConfig();
+    if (!cfg.key) { toast('Kein KI-Schlüssel hinterlegt (Einstellungen).'); return; }
+    const text = $('#mail-text').value.trim();
+    if (!text) return;
+    const proj = projectById($('#mail-project').value);
+    const btn = $('#mail-ai');
+    btn.disabled = true; btn.textContent = 'KI arbeitet …';
+    try {
+      const sys = aiSystemPrompt(proj ? proj.name : 'unbekannt');
+      let raw;
+      const model = cfg.model || AI_DEFAULT_MODEL[cfg.provider] || AI_DEFAULT_MODEL.anthropic;
+      if (cfg.provider === 'openai') {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + cfg.key },
+          body: JSON.stringify({ model, temperature: 0.2, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: sys }, { role: 'user', content: text }] }) });
+        if (!res.ok) throw new Error('OpenAI: ' + res.status + ' ' + (await res.text()).slice(0, 200));
+        raw = (await res.json()).choices[0].message.content;
+      } else {
+        const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': cfg.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({ model, max_tokens: 4000, system: sys, messages: [{ role: 'user', content: text }] }) });
+        if (!res.ok) throw new Error('Anthropic: ' + res.status + ' ' + (await res.text()).slice(0, 200));
+        raw = (await res.json()).content.map((c) => c.text || '').join('');
+      }
+      const json = raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+      const data = JSON.parse(json);
+      const rows = (Array.isArray(data.rows) ? data.rows : []).map((r) => ({
+        text: String(r.text || '').slice(0, 300),
+        kind: L.MAIL_KINDS.includes(r.kind) ? r.kind : 'offen',
+        date: typeof r.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : null,
+        source: String(r.source || r.text || '').slice(0, 600),
+        include: r.include !== false,
+        prefix: '', features: L.mailFeatures(String(r.source || ''), { date: !!r.date, deadlineWord: r.kind === 'frist' }),
+        ai: true,
+      })).filter((r) => r.text.trim());
+      rows.forEach((r) => { if (r.kind === 'offen') r.date = null; });
+      if (!rows.length) throw new Error('Die KI hat keine Aufgaben geliefert.');
+      mailRows = rows; mailRemoved = [];
+      mailSuggested = new Map(rows.map((r) => [r.source, { text: r.text, kind: r.kind }]));
+      drawMailRows();
+      toast(rows.length + ' Vorschläge von der KI – bitte prüfen.');
+    } catch (e) {
+      toast('KI-Auswertung fehlgeschlagen: ' + (e && e.message ? e.message : e));
+    } finally {
+      btn.disabled = false; btn.textContent = 'Mit KI zusammenfassen';
+    }
   }
   (function setupMail() {
     let tm = null;
@@ -5083,6 +5469,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     ta.addEventListener('paste', () => setTimeout(analyseMail, 0));
     $('#mail-project').addEventListener('change', updateMailBtn);
     $('#mail-clear').addEventListener('click', () => { ta.value = ''; analyseMail(); ta.focus(); });
+    $('#mail-ai').addEventListener('click', aiAnalyse);
     $('#mail-form').addEventListener('submit', (e) => {
       const submitter = e.submitter;
       if (!submitter || submitter.id !== 'mail-create') return; // Abbrechen schließt nur
@@ -5095,11 +5482,13 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
         L.ensureDeadlineLists(state);
         const lists = L.listsOf(state, projId);
         const dl = lists.find((l) => l.deadline);
-        const open = lists.find((l) => !l.deadline);
+        const open = lists.find((l) => !l.deadline && !l.followup);
+        const fol = lists.find((l) => l.followup);
         for (const r of rows) {
-          let date = r.kind === 'offen' ? null : (r.date || L.addDays(today, 7));
+          let date = r.kind === 'offen' ? null : r.kind === 'nachfassen' ? (r.date || null) : (r.date || L.addDays(today, 7));
           let listId = null;
           if (r.kind === 'frist') listId = dl ? dl.id : null;
+          else if (r.kind === 'nachfassen') listId = fol ? fol.id : null;
           else if (r.kind === 'offen') listId = open ? open.id : null;
           if (!date && !listId) date = today;
           const todo = { id: L.uid(), text: r.text.trim().slice(0, 500), date, listId, projectId: projId, done: false,
@@ -5107,10 +5496,40 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
           if (r.source && r.source.trim() !== r.text.trim() && r.source.length <= 1000) todo.notes = r.source.trim();
           state.todos.push(todo);
         }
-        ui.projectId = projId; ui.view = ui.view; ui.showOverview = false; ui.showDone = false; ui.showArchive = false; ui.showTrash = false;
+        // Lernen: jede geprüfte Zeile (auch abgewählte und entfernte) wird als Beispiel gemerkt
+        if (!state.learn) state.learn = [];
+        const now = Date.now();
+        const all = [...mailRows.filter((r) => r.text.trim()), ...mailRemoved.map((r) => Object.assign({}, r, { include: false }))];
+        for (const r of all) {
+          const sug = mailSuggested.get(r.source) || null;
+          const ex = L.mailExample(r, sug, now);
+          const i = state.learn.findIndex((x) => x.kind === 'mail' && x.src === ex.src);
+          if (i >= 0) ex.id = state.learn[i].id, state.learn[i] = ex; else state.learn.push(ex);
+        }
+        if (state.learn.length > 400) state.learn = state.learn.slice(-400);
+        mailModelCache = null;
+        ui.projectId = projId; ui.showOverview = false; ui.showDone = false; ui.showArchive = false; ui.showTrash = false;
+        if (ui.mode === 'closed') ui.mode = 'open';
       });
       $('#mail-text').value = '';
-      mailRows = [];
+      mailRows = []; mailRemoved = [];
+    });
+    // Einstellungen: KI
+    const cfg = aiConfig();
+    $('#ai-provider').value = cfg.provider; $('#ai-key').value = cfg.key; $('#ai-model').value = cfg.model;
+    const upd = () => {
+      const c = { provider: $('#ai-provider').value, key: $('#ai-key').value.trim(), model: $('#ai-model').value.trim() };
+      saveAiConfig(c);
+      $('#ai-model').placeholder = 'Standard: ' + AI_DEFAULT_MODEL[c.provider];
+    };
+    ['#ai-provider', '#ai-key', '#ai-model'].forEach((sel) => { $(sel).addEventListener('input', upd); $(sel).addEventListener('change', upd); });
+    $('#ai-model').placeholder = 'Standard: ' + AI_DEFAULT_MODEL[cfg.provider];
+    $('#ai-forget').addEventListener('click', () => {
+      const n = (state.learn || []).filter((e) => e.kind === 'mail').length;
+      if (!n) { toast('Es sind keine gelernten Korrekturen vorhanden.'); return; }
+      if (!window.confirm(n + ' gelernte Korrekturen zur E-Mail-Erkennung löschen?')) return;
+      withUndo('Gelernte Korrekturen gelöscht.', () => { state.learn = (state.learn || []).filter((e) => e.kind !== 'mail'); });
+      mailModelCache = null;
     });
   })();
 
