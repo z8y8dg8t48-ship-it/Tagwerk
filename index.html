@@ -969,8 +969,12 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       <p class="hint">E-Mail-Text einfügen: Tagwerk erkennt Zusagen, Fristen („bis zum 13.11.2026“) und Bitten an die Gegenseite und schlägt knappe Aufgaben vor; der Originalsatz wird als Notiz gespeichert. Änderungen an Text, Art und Auswahl vor dem Anlegen werden gelernt und beim nächsten Mal berücksichtigt (✦).</p>
       <label>Projekt <select id="mail-project"></select></label>
       <label>E-Mail-Text <textarea id="mail-text" rows="7" placeholder="E-Mail hier einfügen …"></textarea></label>
-      <div class="row2"><button type="button" id="mail-clear">Text leeren</button><button type="button" id="mail-ai" hidden>Mit KI zusammenfassen</button></div>
-      <p class="hint" id="mail-ai-hint">Optional: In den Einstellungen lässt sich ein eigener KI-Schlüssel hinterlegen; dann fasst ein Sprachmodell die Mail zusammen.</p>
+      <div class="row2"><button type="button" id="mail-clear">Text leeren</button><button type="button" id="mail-ai" hidden>Mit KI zusammenfassen</button><button type="button" id="mail-copy">KI-Auftrag kopieren</button></div>
+      <p class="hint" id="mail-ai-hint">Ohne Schlüssel: „KI-Auftrag kopieren“, in einen beliebigen KI-Chat (ChatGPT, Claude, Copilot …) einfügen und dessen Antwort unten einfügen. Mit eigenem Schlüssel (Einstellungen) geht das direkt.</p>
+      <div id="mail-paste-wrap" hidden>
+        <label>KI-Antwort einfügen<textarea id="mail-paste" rows="3" placeholder='{"rows":[…]}'></textarea></label>
+        <div class="row2"><button type="button" id="mail-paste-apply">Antwort übernehmen</button></div>
+      </div>
       <p class="hint" id="mail-learn-info"></p>
       <p id="mail-empty" class="hint" hidden>Keine Aufgaben erkannt. Du kannst den Text anpassen.</p>
       <ul id="mail-rows" class="mrows"></ul>
@@ -5416,6 +5420,36 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       aiExamples() ? 'Beispiele, wie der Nutzer Zeilen bisher formuliert und eingeordnet hat (bitte Stil und Einordnung übernehmen):\n' + aiExamples() : '',
     ].filter(Boolean).join('\n\n');
   }
+  /** Übernimmt eine KI-Antwort (JSON mit rows) in die Zeilen; wirft bei unbrauchbarem Inhalt. */
+  function applyAiAnswer(raw) {
+    const json = raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+    const data = JSON.parse(json);
+    const rows = (Array.isArray(data.rows) ? data.rows : []).map((r) => ({
+      text: String(r.text || '').slice(0, 300),
+      kind: L.MAIL_KINDS.includes(r.kind) ? r.kind : 'offen',
+      date: typeof r.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : null,
+      source: String(r.source || r.text || '').slice(0, 600),
+      include: r.include !== false,
+      prefix: '', features: L.mailFeatures(String(r.source || ''), { date: !!r.date, deadlineWord: r.kind === 'frist' }),
+      ai: true,
+    })).filter((r) => r.text.trim());
+    rows.forEach((r) => { if (r.kind === 'offen') r.date = null; });
+    if (!rows.length) throw new Error('Die KI hat keine Aufgaben geliefert.');
+    mailRows = rows; mailRemoved = [];
+    mailSuggested = new Map(rows.map((r) => [r.source, { text: r.text, kind: r.kind }]));
+    drawMailRows();
+    return rows;
+  }
+  /** Ohne Schlüssel: Auftrag für einen beliebigen KI-Chat (ChatGPT, Claude, Copilot …) in die Zwischenablage, Antwort zurück einfügen. */
+  async function copyAiPrompt() {
+    const text = $('#mail-text').value.trim();
+    if (!text) { toast('Erst den E-Mail-Text einfügen.'); return; }
+    const proj = projectById($('#mail-project').value);
+    const prompt = aiSystemPrompt(proj ? proj.name : 'unbekannt') + '\n\nHier die E-Mail:\n"""\n' + text + '\n"""';
+    $('#mail-paste-wrap').hidden = false;
+    try { await navigator.clipboard.writeText(prompt); toast('Auftrag kopiert – in einen KI-Chat einfügen, dessen Antwort unten einfügen.'); }
+    catch (e) { $('#mail-paste').value = prompt; $('#mail-paste').select(); toast('Zwischenablage nicht verfügbar – Text im Feld markiert, bitte selbst kopieren.'); }
+  }
   async function aiAnalyse() {
     const cfg = aiConfig();
     if (!cfg.key) { toast('Kein KI-Schlüssel hinterlegt (Einstellungen).'); return; }
@@ -5439,22 +5473,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
         if (!res.ok) throw new Error('Anthropic: ' + res.status + ' ' + (await res.text()).slice(0, 200));
         raw = (await res.json()).content.map((c) => c.text || '').join('');
       }
-      const json = raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
-      const data = JSON.parse(json);
-      const rows = (Array.isArray(data.rows) ? data.rows : []).map((r) => ({
-        text: String(r.text || '').slice(0, 300),
-        kind: L.MAIL_KINDS.includes(r.kind) ? r.kind : 'offen',
-        date: typeof r.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : null,
-        source: String(r.source || r.text || '').slice(0, 600),
-        include: r.include !== false,
-        prefix: '', features: L.mailFeatures(String(r.source || ''), { date: !!r.date, deadlineWord: r.kind === 'frist' }),
-        ai: true,
-      })).filter((r) => r.text.trim());
-      rows.forEach((r) => { if (r.kind === 'offen') r.date = null; });
-      if (!rows.length) throw new Error('Die KI hat keine Aufgaben geliefert.');
-      mailRows = rows; mailRemoved = [];
-      mailSuggested = new Map(rows.map((r) => [r.source, { text: r.text, kind: r.kind }]));
-      drawMailRows();
+      const rows = applyAiAnswer(raw);
       toast(rows.length + ' Vorschläge von der KI – bitte prüfen.');
     } catch (e) {
       toast('KI-Auswertung fehlgeschlagen: ' + (e && e.message ? e.message : e));
@@ -5470,6 +5489,11 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     $('#mail-project').addEventListener('change', updateMailBtn);
     $('#mail-clear').addEventListener('click', () => { ta.value = ''; analyseMail(); ta.focus(); });
     $('#mail-ai').addEventListener('click', aiAnalyse);
+    $('#mail-copy').addEventListener('click', copyAiPrompt);
+    $('#mail-paste-apply').addEventListener('click', () => {
+      try { const n = applyAiAnswer($('#mail-paste').value).length; $('#mail-paste').value = ''; toast(n + ' Vorschläge aus der KI-Antwort übernommen – bitte prüfen.'); }
+      catch (e) { toast('Antwort nicht lesbar – es wird die JSON-Antwort des KI-Chats erwartet.'); }
+    });
     $('#mail-form').addEventListener('submit', (e) => {
       const submitter = e.submitter;
       if (!submitter || submitter.id !== 'mail-create') return; // Abbrechen schließt nur
