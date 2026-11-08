@@ -742,8 +742,8 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
 @media (max-width: 700px) {
   .mwrap { margin: 0 34px; }
   .mtitle { font: 700 18px/24px var(--font); padding: 6px 0 4px 8px; }
-  #app[data-mview="month"] .lists { display: none; }
-  #app[data-mview="month"] .month { flex: 1 1 0; }
+  .bar-right .ibtn.nav { display: none; }
+  .band .dots { display: none; }
   .mweekdays div { padding: 3px 0; text-align: center; font-size: 10px; }
   .mgrid { grid-auto-rows: 62px; }
   .mcell { height: 62px; padding: 3px 2px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
@@ -764,6 +764,13 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
 
 .msrc { font-size: 11.5px; line-height: 15px; color: var(--muted); margin-top: 2px; }
 .mmark { flex: none; align-self: center; font-size: 10px; font-weight: 800; color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; padding: 0 6px; line-height: 16px; }
+
+/* Datum unter dem Abhak-Kästchen (Fristen, Geplant, Nachfassen) */
+.todo .lead { display: flex; flex-direction: column; align-items: center; flex: none; width: 34px; padding-top: 4px; gap: 1px; }
+.todo .lead .check { margin: 0; }
+.date-under { font-size: 10px; line-height: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.todo:has(.lead) { min-height: 38px; }
+.todo.frist .date-under { color: var(--accent); }
 
 </style>
 </head>
@@ -2960,6 +2967,8 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   const fmtWeekday = new Intl.DateTimeFormat('de-DE', { weekday: 'long' });
   const fmtDate = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
   const fmtShort = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'numeric' });
+  const fmtUnderF = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'short' });
+  const fmtUnder = (iso) => fmtUnderF.format(L.parseISO(iso)).replace(/\./g, '').replace(/\s+/g, ' ').trim(); // „08 Nov“
   const fmtMonth = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' });
   const fmtTime = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
   const fmtMon = new Intl.DateTimeFormat('de-DE', { month: 'short' });
@@ -3202,7 +3211,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-11-07 · E-Mail-Erkennung: Kurzfassungen, lernt aus Korrekturen, optional KI';
+  const BUILD = '2026-11-08 · Datum unter dem Haken, Handy aufgeräumt';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -3424,10 +3433,10 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const spanSeg = h('div', { class: 'seg' + (month ? ' ghost' : ''), role: 'group', 'aria-label': 'Sichtbare Tage', 'aria-hidden': month ? 'true' : null, inert: month ? true : null },
       spanBtn('5 Tage', 'work', 'Fünf Arbeitstage ab heute, Samstag und Sonntag ausgeblendet'), spanBtn('7 Tage', 'full', 'Sieben Tage ab heute'));
     const right = h('div', { class: 'bar-right' }, spanSeg, seg,
-      ibtn('dbl-l', 'Eine Woche zurück', () => shift(-7), month ? 'ghost' : ''),
-      ibtn('chev-l', month ? 'Einen Monat zurück' : 'Einen Tag zurück', () => (month ? shiftMonth(-1) : shift(-1))),
-      ibtn('chev-r', month ? 'Einen Monat vor' : 'Einen Tag vor', () => (month ? shiftMonth(1) : shift(1))),
-      ibtn('dbl-r', 'Eine Woche vor', () => shift(7), month ? 'ghost' : ''),
+      ibtn('dbl-l', 'Eine Woche zurück', () => shift(-7), month ? 'ghost' : 'nav'),
+      ibtn('chev-l', month ? 'Einen Monat zurück' : 'Einen Tag zurück', () => (month ? shiftMonth(-1) : shift(-1)), 'nav'),
+      ibtn('chev-r', month ? 'Einen Monat vor' : 'Einen Tag vor', () => (month ? shiftMonth(1) : shift(1)), 'nav'),
+      ibtn('dbl-r', 'Eine Woche vor', () => shift(7), month ? 'ghost' : 'nav'),
       ibtn('calendar', 'Zu Datum springen', (e) => openDatePicker(e.currentTarget)),
       ibtn('layout', ui.mode === 'max' ? 'Zurück zur Wochenansicht' : 'Projektseite (Listen groß)', () => {
         ui.mode = ui.mode === 'max' ? 'open' : 'max';
@@ -3611,8 +3620,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       meta.push(h('span', { class: 'carried', title: 'Weitergeschoben von ' + fmtShort.format(L.parseISO(t.origDate)) }, '↪'));
     }
     const parts = [
-      heading ? null : checkBox(t),
-      opts.datePrefix && t.date ? h('span', { class: 'date-prefix' }, fmtShort.format(L.parseISO(t.date))) : null,
+      heading ? null : opts.datePrefix && t.date ? h('span', { class: 'lead' }, checkBox(t), h('span', { class: 'date-under', title: 'Datum' }, fmtUnder(t.date))) : checkBox(t),
       opts.time ? h('span', { class: 'date-prefix' }, fmtTime.format(opts.time)) : null,
       h('span', { class: 'todo-text' }, opts.overdue ? h('span', { class: 'frist-flag', title: 'Frist abgelaufen am ' + fmtShort.format(L.parseISO(t.date)) }, 'seit ' + fmtShort.format(L.parseISO(t.date))) : null, t.prio && !heading ? h('span', { class: 'prio', title: 'Hohe Priorität' }, '!') : null, rich(heading ? L.headingText(t.text) : t.text), opts.showProject && p && !heading ? badge(p) : null),
       meta.length ? h('span', { class: 'todo-meta' }, meta) : null,
