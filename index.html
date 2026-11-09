@@ -111,7 +111,7 @@ button { cursor: pointer; }
 .todo-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .todo-text a { color: inherit; text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
 .todo-text a:hover { color: var(--accent); }
-.todo.done .todo-text { color: var(--done); text-decoration: line-through; text-decoration-thickness: 1px; }
+.todo.done .todo-text { color: var(--done); position: relative; }
 .todo.done .todo-text a { color: var(--done); }
 .todo-meta { flex: none; display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; height: calc(var(--row) - 1px); }
 .pdot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot, var(--muted)); flex: none; }
@@ -301,7 +301,7 @@ dialog textarea { resize: vertical; min-height: 84px; line-height: 20px; font-fa
 .mchip .check.small svg { width: 8px; height: 8px; }
 .mchip .pdot { margin-top: 5px; width: 6px; height: 6px; }
 .mchip .mtext { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mchip.done .mtext { color: var(--done); text-decoration: line-through; }
+.mchip.done .mtext { color: var(--done); position: relative; }
 .mchip.heading { background: var(--band); font-weight: 800; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding-left: 5px; }
 .mchip.virtual .mtext { color: var(--faint); font-style: italic; }
 .mchip.dragging { background: var(--accent-soft); }
@@ -772,6 +772,16 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
 .todo:has(.lead) { min-height: 38px; }
 .todo.frist .date-under { color: var(--accent); }
 
+/* Handschriftliches Durchstreichen */
+.strike { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.strike path { fill: none; stroke: var(--text); stroke-width: 1.8px; stroke-linecap: round; opacity: 0.75; }
+.todo.done .strike path, .mchip.done .strike path { stroke: var(--done); opacity: 0.95; }
+.todo.done .check { opacity: 0.85; }
+@media (prefers-reduced-motion: no-preference) {
+  .strike path { stroke-dasharray: 600; stroke-dashoffset: 600; animation: strike-draw 0.4s ease-out forwards; }
+  @keyframes strike-draw { to { stroke-dashoffset: 0; } }
+}
+
 </style>
 </head>
 <body>
@@ -1027,6 +1037,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
         <li><b>Aufgaben aus Mitschriften</b>: Text oder Zeilen markieren und auf „→ Aufgabe“ klicken (oder Strg+Umschalt+A); ohne Markierung wird die aktuelle Zeile genommen. Der Text bleibt, die Zeile bekommt eine Marke ⟦T:…⟧ und erscheint in „Lesen“ als anklickbares „→ Aufgabe“ bzw. „✓ Aufgabe“. Teilnehmer lassen sich am Griff per Drag &amp; Drop sortieren; die Reihenfolge gilt auch in „Lesen“</li>
+        <li><b>Abhaken</b>: Erledigte Aufgaben bleiben bis zum Tagesende handschriftlich durchgestrichen an ihrem Platz stehen und wandern danach unter „Erledigt“. Ein zweiter Klick auf das Kästchen macht das Abhaken rückgängig</li>
         <li><b>Nachfassen</b>: Jedes Projekt hat rechts neben der ersten Liste eine Liste „Nachfassen“ für Rückmeldungen, auf die du wartest oder die du einholen willst (Aufgabe → Haken „Nachfassen“; Datum optional). Am Tag stehen die Aufgaben so: Fristen, Priorisierte, geplante Aufgaben, Nachfassen, interne Aufgaben. Beim Start ist kein Projekt aufgeklappt</li>
         <li><b>Neue Aufgabe (+)</b>: Der runde +-Button unten rechts öffnet die Seitenleiste mit allen Feldern (Titel, Projekt, Datum, Frist, Unteraufgaben, Notizen, Wiederholen). Wird der Titel leer gelassen, entsteht keine Aufgabe. Ein zweiter Klick auf dieselbe Aufgabe schließt ihre Seitenleiste wieder. Tagwerk merkt sich pro Gerät das zuletzt gewählte Projekt; auf dem Handy lässt sich endlos durch die Tage wischen</li>
         <li><b>E-Mail → Aufgaben</b>: Mail-Symbol oben links → Projekt wählen, E-Mail-Text einfügen. Tagwerk schlägt Fristen („bis zum …“), Geplantes, Aufgaben ohne Datum und Nachfassen als knappe Stichpunkte vor (Originalsatz als Notiz). Jede Zeile ist änderbar; Änderungen werden gelernt und fließen beim nächsten Mal ein (✦). Optional kann in den Einstellungen ein eigener KI-Schlüssel (Anthropic/OpenAI) hinterlegt werden – dann fasst ein Sprachmodell die Mail zusammen und nutzt deine Korrekturen als Beispiele</li>
@@ -1197,17 +1208,24 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   const followListIds = (state) => new Set((state.lists || []).filter((l) => l.followup).map((l) => l.id));
   const isFollow = (state, t) => !!t.listId && followListIds(state).has(t.listId);
   /** Offene Aufgaben einer Nachfassen-Liste: erst die mit Datum (nach Datum), dann die ohne. */
-  function followOf(state, listId) {
-    return state.todos.filter((t) => t.listId === listId && !t.done).sort((a, b) => {
+  /** Heute abgehakt? Erledigte Aufgaben bleiben bis zum Tagesende durchgestrichen an ihrem Platz (nur wenn `today` übergeben wird). */
+  function doneToday(t, today) {
+    return !!(today && t.done && typeof t.doneAt === 'string' && toISO(new Date(t.doneAt)) === today);
+  }
+  const showOpen = (t, today) => !t.done || doneToday(t, today);
+  const doneLast = (a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1);
+  function followOf(state, listId, today) {
+    return state.todos.filter((t) => t.listId === listId && showOpen(t, today)).sort((a, b) => {
+      const dl = doneLast(a, b); if (dl) return dl;
       if (!!a.date !== !!b.date) return a.date ? -1 : 1;
       return a.date !== b.date ? (a.date < b.date ? -1 : 1) : a.order - b.order;
     });
   }
   const isDeadline = (state, t) => !!t.listId && deadlineListIds(state).has(t.listId);
   /** Offene Fristen einer Fristen-Liste, nach Datum. */
-  function fristenOf(state, listId) {
-    return state.todos.filter((t) => t.listId === listId && !t.done)
-      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.order - b.order));
+  function fristenOf(state, listId, today) {
+    return state.todos.filter((t) => t.listId === listId && showOpen(t, today))
+      .sort((a, b) => doneLast(a, b) || (a.date < b.date ? -1 : a.date > b.date ? 1 : a.order - b.order));
   }
   /** Offene Fristen, deren Datum vor `today` liegt (ältere zuerst) – für den Hinweis auf dem heutigen Tag. */
   function overdueFristen(state, today) {
@@ -1684,15 +1702,15 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     intern = intern || internalIds(state);
     return (t) => (t.listId && dl.has(t.listId) ? 0 : t.prio ? 1 : t.listId && fl.has(t.listId) ? 3 : intern.has(t.projectId) ? 4 : 2);
   }
-  function todosOnDate(state, iso) {
+  function todosOnDate(state, iso, today) {
     const arch = archivedIds(state);
     const intern = internalIds(state);
     const rank = dayRank(state, intern);
-    return state.todos.filter((t) => t.date === iso && !t.done && !arch.has(t.projectId)).sort((a, b) => (rank(a) - rank(b)) || a.order - b.order);
+    return state.todos.filter((t) => t.date === iso && showOpen(t, today) && !arch.has(t.projectId)).sort((a, b) => doneLast(a, b) || (rank(a) - rank(b)) || a.order - b.order);
   }
   function internalIds(state) { return new Set(state.projects.filter((p) => p.internal).map((p) => p.id)); }
-  function todosInList(state, listId) {
-    return state.todos.filter((t) => !t.date && t.listId === listId && !t.done).sort(byOrder);
+  function todosInList(state, listId, today) {
+    return state.todos.filter((t) => !t.date && t.listId === listId && showOpen(t, today)).sort((a, b) => doneLast(a, b) || byOrder(a, b));
   }
   /** Alle erledigten Aufgaben, zuletzt abgehakte zuerst. Ohne Zeitstempel (Altdaten) ganz unten. */
   function doneTodos(state) {
@@ -1741,10 +1759,10 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     return state.lists.filter((l) => l.projectId === projectId).sort(byOrder);
   }
   /** Alle offenen, datierten Aufgaben eines Projekts, nach Datum sortiert ("Geplant"). */
-  function plannedForProject(state, projectId) {
+  function plannedForProject(state, projectId, today) {
     return state.todos
-      .filter((t) => t.projectId === projectId && t.date && !t.done && !isDeadline(state, t) && !isFollow(state, t))
-      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.order - b.order));
+      .filter((t) => t.projectId === projectId && t.date && showOpen(t, today) && !isDeadline(state, t) && !isFollow(state, t))
+      .sort((a, b) => doneLast(a, b) || (a.date < b.date ? -1 : a.date > b.date ? 1 : a.order - b.order));
   }
 
   /**
@@ -2328,7 +2346,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   return {
     DAYS_VISIBLE, DEFAULT_ACCENT, FREQS,
     toISO, parseISO, addDays, daysBetween, todayISO, visibleDays, uid,
-    emptyState, normalize, ensureDefaults, monthStart, addMonths, monthGrid, ensureDeadlineLists, ensureFollowLists, followOf, isFollow, dayRank, mailSummary, mailFeatures, mailModel, mailExample, MAIL_KINDS, touch, markChanged, revertChanges, restoreMissing, rehash, fingerprint, isPristine, merge, uploadText, hashItem, isDeadline, fristenOf, overdueFristen, daysForSpan, workdayFrom, stepWorkday, isWeekend, SPANS, doneTodos, openCountForProject, reorderSubtasks, weekStart, deriveCode, cleanCode, cleanSubs, subtaskProgress,
+    emptyState, normalize, ensureDefaults, monthStart, addMonths, monthGrid, ensureDeadlineLists, ensureFollowLists, followOf, isFollow, dayRank, doneToday, mailSummary, mailFeatures, mailModel, mailExample, MAIL_KINDS, touch, markChanged, revertChanges, restoreMissing, rehash, fingerprint, isPristine, merge, uploadText, hashItem, isDeadline, fristenOf, overdueFristen, daysForSpan, workdayFrom, stepWorkday, isWeekend, SPANS, doneTodos, openCountForProject, reorderSubtasks, weekStart, deriveCode, cleanCode, cleanSubs, subtaskProgress,
     todosOnDate, todosInList, listsOf, plannedForProject, nextOrder, nextOrderInList,
     rollover, orderForIndex, moveTodo, moveToList, reorderLists,
     occursOn, materialize, virtualOn, search,
@@ -3211,7 +3229,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-11-08 · Datum unter dem Haken, Handy aufgeräumt';
+  const BUILD = '2026-11-09 · Erledigtes bleibt bis Tagesende durchgestrichen stehen';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -3278,7 +3296,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const t = state.todos.find((x) => x.id === id);
     if (!t) return;
     if (!t.done) {
-      withUndo('Erledigt – abgelegt unter „Erledigt“.', () => { t.done = true; t.doneAt = new Date().toISOString(); delete t.origDate; });
+      withUndo('Erledigt – bleibt bis Tagesende durchgestrichen stehen.', () => { t.done = true; t.doneAt = new Date().toISOString(); delete t.origDate; });
     } else {
       t.done = false;
       delete t.doneAt;
@@ -3517,7 +3535,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const d = L.parseISO(iso);
     const items = h('ul', { class: 'items' }, [
       ...(iso === today ? L.overdueFristen(state, today).map((t) => todoItem(t, { showProject: true, overdue: true })) : []),
-      ...L.todosOnDate(state, iso).map((t) => todoItem(t, { showProject: true })),
+      ...L.todosOnDate(state, iso, today).map((t) => todoItem(t, { showProject: true })),
     ]);
     for (const r of L.virtualOn(state, iso, today)) items.append(virtualItem(r));
     const col = h('section', { class: 'day' + (iso === today ? ' today' : '') + (iso < today ? ' past' : ''), 'data-date': iso },
@@ -3594,6 +3612,46 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     return frag;
   }
 
+  /** Handschriftliches Durchstreichen: je Textzeile ein leichter Bogen (nach unten offen), rechts tiefer endend; Variante je Aufgabe. */
+  const STRIKES = [[0.55, 0.22, 0.78], [0.5, 0.18, 0.74], [0.58, 0.26, 0.82]];
+  function strike(t, textEl) {
+    let hsh = 0; for (const ch of String(t.id)) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'strike'); svg.setAttribute('aria-hidden', 'true');
+    const draw = () => {
+      if (!textEl.isConnected) return;
+      const box = textEl.getBoundingClientRect();
+      if (!box.width) return;
+      const range = document.createRange();
+      const rects = [];
+      const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT);
+      let n;
+      while ((n = walker.nextNode())) {
+        if (!n.textContent.trim() || (n.parentElement && n.parentElement.closest('.pbadge, .strike, .frist-flag'))) continue;
+        range.selectNodeContents(n);
+        for (const r of range.getClientRects()) if (r.width > 2) rects.push(r);
+      }
+      const lines = [];
+      for (const r of rects) {
+        const l = lines.find((x) => Math.abs(x.top - r.top) < 4);
+        if (l) { l.left = Math.min(l.left, r.left); l.right = Math.max(l.right, r.right); l.bottom = Math.max(l.bottom, r.bottom); }
+        else lines.push({ top: r.top, bottom: r.bottom, left: r.left, right: r.right });
+      }
+      svg.setAttribute('viewBox', '0 0 ' + box.width + ' ' + box.height);
+      svg.style.width = box.width + 'px'; svg.style.height = box.height + 'px';
+      svg.replaceChildren(...lines.map((l, i) => {
+        const v = STRIKES[(hsh + i) % STRIKES.length];
+        const x1 = l.left - box.left - 3, x2 = l.right - box.left + 3, y0 = l.top - box.top, hgt = l.bottom - l.top;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M' + x1.toFixed(1) + ' ' + (y0 + hgt * v[0]).toFixed(1) + ' Q ' + ((x1 + x2) / 2).toFixed(1) + ' ' + (y0 + hgt * v[1]).toFixed(1) + ' ' + x2.toFixed(1) + ' ' + (y0 + hgt * v[2]).toFixed(1));
+        return path;
+      }));
+    };
+    requestAnimationFrame(draw);
+    if (window.ResizeObserver) { const ro = new ResizeObserver(() => draw()); ro.observe(textEl); }
+    return svg;
+  }
+  function withStrike(t, heading, el) { if (t.done && !heading) el.appendChild(strike(t, el)); return el; }
   function checkBox(t, extra) {
     return h('button', {
       type: 'button', class: 'check' + (extra ? ' ' + extra : ''), role: 'checkbox', 'aria-checked': String(t.done), 'aria-label': 'Erledigt',
@@ -3622,7 +3680,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const parts = [
       heading ? null : opts.datePrefix && t.date ? h('span', { class: 'lead' }, checkBox(t), h('span', { class: 'date-under', title: 'Datum' }, fmtUnder(t.date))) : checkBox(t),
       opts.time ? h('span', { class: 'date-prefix' }, fmtTime.format(opts.time)) : null,
-      h('span', { class: 'todo-text' }, opts.overdue ? h('span', { class: 'frist-flag', title: 'Frist abgelaufen am ' + fmtShort.format(L.parseISO(t.date)) }, 'seit ' + fmtShort.format(L.parseISO(t.date))) : null, t.prio && !heading ? h('span', { class: 'prio', title: 'Hohe Priorität' }, '!') : null, rich(heading ? L.headingText(t.text) : t.text), opts.showProject && p && !heading ? badge(p) : null),
+      withStrike(t, heading, h('span', { class: 'todo-text' }, opts.overdue ? h('span', { class: 'frist-flag', title: 'Frist abgelaufen am ' + fmtShort.format(L.parseISO(t.date)) }, 'seit ' + fmtShort.format(L.parseISO(t.date))) : null, t.prio && !heading ? h('span', { class: 'prio', title: 'Hohe Priorität' }, '!') : null, rich(heading ? L.headingText(t.text) : t.text), opts.showProject && p && !heading ? badge(p) : null)),
       meta.length ? h('span', { class: 'todo-meta' }, meta) : null,
     ];
     li.append(...parts.filter(Boolean));
@@ -3651,10 +3709,10 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   function monthChip(t, overdue) {
     const heading = L.isHeading(t.text);
     const p = t.projectId ? projectById(t.projectId) : null;
-    const li = h('li', { class: 'mchip' + (heading ? ' heading' : '') + (isFrist(t) ? ' frist' : '') + (isFollow(t) ? ' follow' : '') + (overdue ? ' overdue' : '') + (p && p.internal && !t.prio && !isFollow(t) ? ' internal' : ''), 'data-id': t.id, draggable: overdue ? null : 'true', title: 'Klicken für Details' },
+    const li = h('li', { class: 'mchip' + (t.done ? ' done' : '') + (heading ? ' heading' : '') + (isFrist(t) ? ' frist' : '') + (isFollow(t) ? ' follow' : '') + (overdue ? ' overdue' : '') + (p && p.internal && !t.prio && !isFollow(t) ? ' internal' : ''), 'data-id': t.id, draggable: overdue ? null : 'true', title: 'Klicken für Details' },
       heading ? null : checkBox(t, 'small'),
       overdue ? h('span', { class: 'frist-flag' }, '!') : null,
-      h('span', { class: 'mtext' }, t.prio && !heading ? h('span', { class: 'prio' }, '!') : null, rich(heading ? L.headingText(t.text) : t.text)),
+      withStrike(t, heading, h('span', { class: 'mtext' }, t.prio && !heading ? h('span', { class: 'prio' }, '!') : null, rich(heading ? L.headingText(t.text) : t.text))),
       p && !heading ? badge(p) : null);
     li.addEventListener('click', (e) => { e.stopPropagation(); if (!e.target.closest('a, .check')) openEdit(t.id); });
     li.addEventListener('dragstart', (e) => {
@@ -3680,7 +3738,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   }
   function monthCell(iso) {
     const d = L.parseISO(iso);
-    const chips = [...(iso === today ? L.overdueFristen(state, today).map((t) => monthChip(t, true)) : []), ...L.todosOnDate(state, iso).map((t) => monthChip(t))];
+    const chips = [...(iso === today ? L.overdueFristen(state, today).map((t) => monthChip(t, true)) : []), ...L.todosOnDate(state, iso, today).map((t) => monthChip(t))];
     for (const r of L.virtualOn(state, iso, today)) {
       chips.push(h('li', { class: 'mchip virtual', title: 'Wiederkehrende Aufgabe', onclick: (e) => { e.stopPropagation(); openRule(r.id); } }, h('span', { class: 'mtext' }, r.text)));
     }
@@ -4156,7 +4214,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   }
 
   function plannedColumn(p) {
-    const items = h('ul', { class: 'items' }, L.plannedForProject(state, p.id).map((t) => todoItem(t, { datePrefix: true })));
+    const items = h('ul', { class: 'items' }, L.plannedForProject(state, p.id, today).map((t) => todoItem(t, { datePrefix: true })));
     for (const r of state.recurs.filter((x) => x.projectId === p.id)) {
       items.append(h('li', { class: 'todo virtual', title: 'Wiederkehrende Aufgabe – anklicken für Details', onclick: () => openRule(r.id) },
         h('span', { class: 'check ghost', 'aria-hidden': 'true' }, icon('check')),
@@ -4201,7 +4259,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   }
 
   function listColumn(l) {
-    const items = h('ul', { class: 'items' }, (l.deadline ? L.fristenOf(state, l.id) : l.followup ? L.followOf(state, l.id) : L.todosInList(state, l.id)).map((t) => todoItem(t, l.deadline || l.followup ? { datePrefix: true } : {})));
+    const items = h('ul', { class: 'items' }, (l.deadline ? L.fristenOf(state, l.id, today) : l.followup ? L.followOf(state, l.id, today) : L.todosInList(state, l.id, today)).map((t) => todoItem(t, l.deadline || l.followup ? { datePrefix: true } : {})));
     let headContent;
     if (ui.renamingList === l.id) {
       const inp = h('input', { class: 'head-input', type: 'text', maxlength: '40', 'data-focus': 'rename', 'aria-label': 'Listenname' });
