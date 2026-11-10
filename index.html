@@ -782,6 +782,10 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   @keyframes strike-draw { to { stroke-dashoffset: 0; } }
 }
 
+/* Fragen in der Mitschrift */
+.minute fieldset.questions { margin-top: 10px; }
+.minute .questions .sub-input.done { color: var(--done); text-decoration: line-through; }
+
 </style>
 </head>
 <body>
@@ -894,6 +898,11 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       </div>
       <textarea id="min-body" rows="12" maxlength="200000" placeholder="Mitschrift …" aria-label="Text der Mitschrift"></textarea>
       <div id="min-preview" class="mpreview" hidden></div>
+      <fieldset class="subs questions">
+        <legend>Fragen <span id="minq-count"></span></legend>
+        <ul id="min-questions" class="sublist"></ul>
+        <input id="min-q-new" type="text" maxlength="500" autocomplete="off" placeholder="Frage / Klärungspunkt hinzufügen …" aria-label="Neue Frage">
+      </fieldset>
       <div class="dialog-actions">
         <button type="button" id="min-delete" class="danger">Löschen</button>
         <button type="button" id="min-word" title="Als Word-Datei (.docx) herunterladen">Word-Export</button>
@@ -1037,6 +1046,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
         <li>Unteraufgaben im Detailfenster per Griff <b>⠿</b> umsortieren; Projekte brauchen ein <b>Kürzel</b> (max. 10 Zeichen)</li>
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
         <li><b>Aufgaben aus Mitschriften</b>: Text oder Zeilen markieren und auf „→ Aufgabe“ klicken (oder Strg+Umschalt+A); ohne Markierung wird die aktuelle Zeile genommen. Der Text bleibt, die Zeile bekommt eine Marke ⟦T:…⟧ und erscheint in „Lesen“ als anklickbares „→ Aufgabe“ bzw. „✓ Aufgabe“. Teilnehmer lassen sich am Griff per Drag &amp; Drop sortieren; die Reihenfolge gilt auch in „Lesen“</li>
+        <li><b>Fragen in Mitschriften</b>: Unter dem Text gibt es eine eigene Checkliste für Fragen und Klärungspunkte während der Besprechung (Enter fügt hinzu, Haken = geklärt, ⠿ zum Umsortieren). Sie wird mit der Mitschrift gespeichert und erscheint in Kopie und Word-Export</li>
         <li><b>Abhaken</b>: Erledigte Aufgaben bleiben bis zum Tagesende handschriftlich durchgestrichen an ihrem Platz stehen und wandern danach unter „Erledigt“. Ein zweiter Klick auf das Kästchen macht das Abhaken rückgängig</li>
         <li><b>Nachfassen</b>: Jedes Projekt hat rechts neben der ersten Liste eine Liste „Nachfassen“ für Rückmeldungen, auf die du wartest oder die du einholen willst (Aufgabe → Haken „Nachfassen“; Datum optional). Am Tag stehen die Aufgaben so: Fristen, Priorisierte, geplante Aufgaben, Nachfassen, interne Aufgaben. Beim Start ist kein Projekt aufgeklappt</li>
         <li><b>Neue Aufgabe (+)</b>: Der runde +-Button unten rechts öffnet die Seitenleiste mit allen Feldern (Titel, Projekt, Datum, Frist, Unteraufgaben, Notizen, Wiederholen). Wird der Titel leer gelassen, entsteht keine Aufgabe. Ein zweiter Klick auf dieselbe Aufgabe schließt ihre Seitenleiste wieder. Tagwerk merkt sich pro Gerät das zuletzt gewählte Projekt; auf dem Handy lässt sich endlos durch die Tage wischen</li>
@@ -1077,6 +1087,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
  *   lists:    [{id, projectId, name, order}]         → Listen eines Projekts (unteres Panel)
  *   todos:    [{id, text, date|null, listId|null, projectId|null, done, order,
  *               origDate?, doneAt?, recurId?}]
+ *   minutes[].questions?: [{id, text, done}]  – Fragen/Klärungen zur Besprechung
  *             Mit Datum → erscheint in der Tagesspalte; ohne Datum → liegt in seiner Liste.
  *   recurs:   [{id, text, projectId, freq, interval, start, through, until?}]
  *   settings: {accent, mode}
@@ -1285,7 +1296,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     list: ['id', 'projectId', 'name', 'order', 'deadline', 'followup', 'updatedAt'],
     todo: ['id', 'text', 'date', 'listId', 'projectId', 'done', 'order', 'origDate', 'doneAt', 'recurId', 'prio', 'updatedAt', 'notes', 'subtasks'],
     recur: ['id', 'text', 'projectId', 'freq', 'interval', 'start', 'through', 'until', 'prio', 'updatedAt', 'notes', 'subtasks'],
-    minute: ['id', 'projectId', 'title', 'date', 'start', 'end', 'participants', 'body', 'updatedAt'],
+    minute: ['id', 'projectId', 'title', 'date', 'start', 'end', 'participants', 'body', 'questions', 'updatedAt'],
     learn: ['id', 'kind', 'src', 'f', 'k', 'inc', 'date', 'text', 'sug', 'pre', 'sk', 'updatedAt'],
   };
   function carryExtra(src, dst, known) {
@@ -1414,6 +1425,8 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
           participants: cleanPeople(m.participants),
           body: typeof m.body === 'string' ? m.body.slice(0, 200000) : '',
         };
+        const qs = cleanSubs(m.questions);
+        if (qs.length) min.questions = qs; // Fragen/Klärungen während der Besprechung (eigene Checkliste)
         if (Number.isFinite(m.updatedAt)) min.updatedAt = m.updatedAt;
         carryExtra(m, min, KNOWN.minute);
         s.minutes.push(min);
@@ -3229,7 +3242,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-11-09 · Erledigtes bleibt bis Tagesende durchgestrichen stehen';
+  const BUILD = '2026-11-10 · Fragen in Mitschriften';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -4491,6 +4504,63 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   const minBody = q('#min-body');
   let minCtx = null;
   let minDirty = false;
+  // Fragen/Klärungen: eigene Checkliste zur Mitschrift (Arbeitskopie bis zum Speichern)
+  let minQuestions = [];
+  const qNew = q('#min-q-new');
+  let qDrag = null;
+  const clearQMarks = () => q('#min-questions').querySelectorAll('.ins-before, .ins-after').forEach((x) => x.classList.remove('ins-before', 'ins-after'));
+  function qDropIndex(y) {
+    const lis = [...q('#min-questions').children].filter((x) => x.dataset.id !== qDrag);
+    let idx = lis.length;
+    for (let i = 0; i < lis.length; i++) { const r = lis[i].getBoundingClientRect(); if (y < r.top + r.height / 2) { idx = i; break; } }
+    return { lis, idx };
+  }
+  q('#min-questions').addEventListener('dragover', (e) => {
+    if (!qDrag) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move'; clearQMarks();
+    const { lis, idx } = qDropIndex(e.clientY);
+    if (idx < lis.length) lis[idx].classList.add('ins-before'); else if (lis.length) lis[lis.length - 1].classList.add('ins-after');
+  });
+  q('#min-questions').addEventListener('drop', (e) => {
+    if (!qDrag) return;
+    e.preventDefault();
+    const { idx } = qDropIndex(e.clientY);
+    const from = minQuestions.findIndex((x) => x.id === qDrag);
+    if (from >= 0) { const [it] = minQuestions.splice(from, 1); minQuestions.splice(idx > from ? idx : idx, 0, it); minDirty = true; draftSoon(); }
+    qDrag = null; clearQMarks(); drawQuestions();
+  });
+  function addQuestion() {
+    const v = qNew.value.trim();
+    qNew.value = '';
+    if (!v) return false;
+    minQuestions.push({ id: L.uid(), text: v.slice(0, 500), done: false });
+    minDirty = true; draftSoon();
+    return true;
+  }
+  function drawQuestions(focusNew) {
+    q('#minq-count').textContent = minQuestions.length ? minQuestions.filter((x) => x.done).length + '/' + minQuestions.length : '';
+    q('#min-questions').replaceChildren(...minQuestions.map((it) => {
+      const inp = h('input', { type: 'text', class: 'sub-input' + (it.done ? ' done' : ''), maxlength: '500', 'aria-label': 'Frage' });
+      inp.value = it.text;
+      inp.addEventListener('input', () => { it.text = inp.value; minDirty = true; draftSoon(); });
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); qNew.focus(); } });
+      inp.addEventListener('blur', () => { if (inp.value.trim()) return; minQuestions = minQuestions.filter((x) => x !== it); minDirty = true; drawQuestions(); });
+      const grip = h('span', { class: 'grip', title: 'Ziehen zum Umsortieren', 'aria-hidden': 'true' }, '⠿');
+      const li = h('li', { 'data-id': it.id }, grip,
+        h('button', { type: 'button', class: 'check small' + (it.done ? ' on' : ''), role: 'checkbox', 'aria-checked': String(it.done), 'aria-label': 'Frage geklärt',
+          onclick: () => { it.done = !it.done; minDirty = true; draftSoon(); drawQuestions(); } }, icon('check')),
+        inp,
+        h('button', { type: 'button', class: 'del', title: 'Frage entfernen', 'aria-label': 'Frage entfernen', onclick: () => { minQuestions = minQuestions.filter((x) => x !== it); minDirty = true; draftSoon(); drawQuestions(); } }, '×'));
+      grip.addEventListener('mousedown', () => { li.draggable = true; });
+      li.addEventListener('dragstart', (e) => { qDrag = it.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', it.id); li.classList.add('dragging'); });
+      li.addEventListener('dragend', () => { qDrag = null; li.draggable = false; li.classList.remove('dragging'); clearQMarks(); });
+      return li;
+    }));
+    if (focusNew) qNew.focus();
+  }
+  qNew.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); if (addQuestion()) drawQuestions(true); } });
+  qNew.addEventListener('blur', () => { if (qNew.value.trim() && addQuestion()) drawQuestions(); });
+  const questionsText = () => (minQuestions.length ? ['Fragen:', ...minQuestions.map((x) => (x.done ? '☑ ' : '☐ ') + x.text)] : []);
   // Entwurf: Jede Eingabe landet sofort in einem eigenen Speicher; geht die Seite verloren (iOS beendet Apps im Hintergrund), kommt der Text beim nächsten Start zurück.
   const DRAFT_KEY = 'tagwerk-entwurf-mitschrift';
   let draftTimer = null;
@@ -4504,7 +4574,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         id: minCtx.id, projectId: minCtx.projectId, title, date: q('#min-date').value, start: q('#min-start').value, end: q('#min-end').value,
-        participants: readPeople(), body, at: Date.now(), base: cur ? cur.updatedAt || 0 : 0,
+        participants: readPeople(), body, questions: minQuestions, at: Date.now(), base: cur ? cur.updatedAt || 0 : 0,
       }));
     } catch (e) { /* Speicher gesperrt */ }
   }
@@ -4627,6 +4697,8 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     q('#min-end').value = m ? m.end : '';
     fillPeople(m ? m.participants : []);
     minBody.value = m ? m.body : '';
+    minQuestions = m && m.questions ? m.questions.map((x) => Object.assign({}, x)) : [];
+    drawQuestions();
     q('#min-delete').hidden = !m;
     minDirty = false;
     minSetPreview(!!m && !!m.body);
@@ -4637,6 +4709,8 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       q('#min-end').value = draft.end || '';
       fillPeople(draft.participants || []);
       minBody.value = draft.body || '';
+      minQuestions = Array.isArray(draft.questions) ? draft.questions.filter((x) => x && typeof x.text === 'string').map((x) => ({ id: x.id || L.uid(), text: x.text, done: !!x.done })) : [];
+      drawQuestions();
       minDirty = true;
       minSetPreview(false);
     }
@@ -4665,8 +4739,10 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     if (!date) { toast('Bitte ein Datum wählen.'); return; }
     if (start && end && end < start) { toast('Das Ende liegt vor dem Start.'); return; }
     const data = { title: q('#min-title').value.trim(), date, start, end, participants: readPeople(), body: minBody.value.replace(/\s+$/, '') };
+    const qs = minQuestions.filter((x) => x.text.trim()).map((x) => ({ id: x.id, text: x.text.trim().slice(0, 500), done: !!x.done }));
+    if (qs.length) data.questions = qs;
     const m = minCtx.id ? state.minutes.find((x) => x.id === minCtx.id) : null;
-    if (m) Object.assign(m, data);
+    if (m) { Object.assign(m, data); if (!qs.length) delete m.questions; }
     else state.minutes.push(Object.assign({ id: L.uid(), projectId: minCtx.projectId }, data));
     saveSoon();
     minDirty = false;
@@ -4687,7 +4763,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     lines.push('Datum: ' + (d ? fmtMin.format(L.parseISO(d)) : '') + (t ? ', ' + t : ''));
     const people = readPeople();
     if (people.length) lines.push('Teilnehmer:', ...people.map((x) => '- ' + personText(x)));
-    const text = lines.join('\n') + '\n\n' + L.stripTaskMarks(minBody.value);
+    const text = lines.join('\n') + '\n\n' + L.stripTaskMarks(minBody.value) + (minQuestions.length ? '\n\n' + questionsText().join('\n') : '');
     try { await navigator.clipboard.writeText(text); toast('Mitschrift kopiert.'); } catch (err) { toast('Kopieren war nicht möglich.'); }
   });
 
@@ -4701,7 +4777,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
       dateText: date ? new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(L.parseISO(date)) : '',
       timeText: timeSpan({ start: q('#min-start').value, end: q('#min-end').value }) ? timeSpan({ start: q('#min-start').value, end: q('#min-end').value }) + ' Uhr' : '',
       participants: readPeople(),
-      body: L.stripTaskMarks(minBody.value),
+      body: L.stripTaskMarks(minBody.value) + (minQuestions.length ? '\n\n## Fragen\n' + minQuestions.map((x) => (x.done ? '☑ ' : '☐ ') + x.text).join('\n') : ''),
     });
     const safe = title.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || 'Mitschrift';
     const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
