@@ -1047,7 +1047,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
         <li><b>Mitschriften</b>: je Projekt eine Spalte für Besprechungen mit Datum, Start, Ende, Teilnehmern und formatiertem Text (Überschriften, Listen, fett, kursiv); Strg+B / Strg+I funktionieren auch</li>
         <li><b>Aufgaben aus Mitschriften</b>: Text oder Zeilen markieren und auf „→ Aufgabe“ klicken (oder Strg+Umschalt+A); ohne Markierung wird die aktuelle Zeile genommen. Der Text bleibt, die Zeile bekommt eine Marke ⟦T:…⟧ und erscheint in „Lesen“ als anklickbares „→ Aufgabe“ bzw. „✓ Aufgabe“. Teilnehmer lassen sich am Griff per Drag &amp; Drop sortieren; die Reihenfolge gilt auch in „Lesen“</li>
         <li><b>Fragen in Mitschriften</b>: Unter dem Text gibt es eine eigene Checkliste für Fragen und Klärungspunkte während der Besprechung (Enter fügt hinzu, Haken = geklärt, ⠿ zum Umsortieren). Sie wird mit der Mitschrift gespeichert und erscheint in Kopie und Word-Export</li>
-        <li><b>Abhaken</b>: Erledigte Aufgaben bleiben bis zum Tagesende handschriftlich durchgestrichen an ihrem Platz stehen und wandern danach unter „Erledigt“. Ein zweiter Klick auf das Kästchen macht das Abhaken rückgängig</li>
+        <li><b>Abhaken</b>: Der Titel wird kurz handschriftlich durchgestrichen, dann wandert die Aufgabe unter „Erledigt“ (Rückgängig über die Meldung unten)</li>
         <li><b>Nachfassen</b>: Jedes Projekt hat rechts neben der ersten Liste eine Liste „Nachfassen“ für Rückmeldungen, auf die du wartest oder die du einholen willst (Aufgabe → Haken „Nachfassen“; Datum optional). Am Tag stehen die Aufgaben so: Fristen, Priorisierte, geplante Aufgaben, Nachfassen, interne Aufgaben. Beim Start ist kein Projekt aufgeklappt</li>
         <li><b>Neue Aufgabe (+)</b>: Der runde +-Button unten rechts öffnet die Seitenleiste mit allen Feldern (Titel, Projekt, Datum, Frist, Unteraufgaben, Notizen, Wiederholen). Wird der Titel leer gelassen, entsteht keine Aufgabe. Ein zweiter Klick auf dieselbe Aufgabe schließt ihre Seitenleiste wieder. Tagwerk merkt sich pro Gerät das zuletzt gewählte Projekt; auf dem Handy lässt sich endlos durch die Tage wischen</li>
         <li><b>E-Mail → Aufgaben</b>: Mail-Symbol oben links → Projekt wählen, E-Mail-Text einfügen. Tagwerk schlägt Fristen („bis zum …“), Geplantes, Aufgaben ohne Datum und Nachfassen als knappe Stichpunkte vor (Originalsatz als Notiz). Jede Zeile ist änderbar; Änderungen werden gelernt und fließen beim nächsten Mal ein (✦). Optional kann in den Einstellungen ein eigener KI-Schlüssel (Anthropic/OpenAI) hinterlegt werden – dann fasst ein Sprachmodell die Mail zusammen und nutzt deine Korrekturen als Beispiele</li>
@@ -3242,7 +3242,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     openDrawers().forEach(saveDrawer);
   });
 
-  const BUILD = '2026-11-10 · Fragen in Mitschriften';
+  const BUILD = '2026-11-13 · Erledigtes wieder sofort ausgeblendet (mit Durchstreich-Animation)';
   $('#build-info').textContent = 'Stand: ' + BUILD;
 
   // ---------- Dialog: Projekt abfragen (Aufgaben, die außerhalb eines Projekts entstehen) ----------
@@ -3309,7 +3309,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const t = state.todos.find((x) => x.id === id);
     if (!t) return;
     if (!t.done) {
-      withUndo('Erledigt – bleibt bis Tagesende durchgestrichen stehen.', () => { t.done = true; t.doneAt = new Date().toISOString(); delete t.origDate; });
+      withUndo('Erledigt – abgelegt unter „Erledigt“.', () => { t.done = true; t.doneAt = new Date().toISOString(); delete t.origDate; });
     } else {
       t.done = false;
       delete t.doneAt;
@@ -3548,7 +3548,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     const d = L.parseISO(iso);
     const items = h('ul', { class: 'items' }, [
       ...(iso === today ? L.overdueFristen(state, today).map((t) => todoItem(t, { showProject: true, overdue: true })) : []),
-      ...L.todosOnDate(state, iso, today).map((t) => todoItem(t, { showProject: true })),
+      ...L.todosOnDate(state, iso).map((t) => todoItem(t, { showProject: true })),
     ]);
     for (const r of L.virtualOn(state, iso, today)) items.append(virtualItem(r));
     const col = h('section', { class: 'day' + (iso === today ? ' today' : '') + (iso < today ? ' past' : ''), 'data-date': iso },
@@ -3669,8 +3669,20 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
     return h('button', {
       type: 'button', class: 'check' + (extra ? ' ' + extra : ''), role: 'checkbox', 'aria-checked': String(t.done), 'aria-label': 'Erledigt',
       title: t.done ? 'Als offen markieren' : 'Als erledigt markieren',
-      onclick: (e) => { e.stopPropagation(); toggleTodo(t.id); },
+      onclick: (e) => { e.stopPropagation(); strikeThen(e.currentTarget, t); },
     }, icon('check'));
+  }
+  /** Beim Abhaken: Haken setzen, Titel handschriftlich durchstreichen, dann erst (0,45 s) die Aufgabe nach „Erledigt“ verschieben. */
+  function strikeThen(btn, t) {
+    const li = btn.closest('.todo');
+    if (t.done || !li || reduceMotion()) { toggleTodo(t.id); return; }
+    if (li.dataset.pending) return;
+    li.dataset.pending = '1';
+    li.classList.add('done');
+    btn.setAttribute('aria-checked', 'true');
+    const textEl = li.querySelector('.todo-text');
+    if (textEl && !textEl.querySelector('.strike')) textEl.appendChild(strike(t, textEl));
+    setTimeout(() => { if (state.todos.some((x) => x.id === t.id && !x.done)) toggleTodo(t.id); }, 450);
   }
 
   function indicators(t) {
@@ -3751,7 +3763,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   }
   function monthCell(iso) {
     const d = L.parseISO(iso);
-    const chips = [...(iso === today ? L.overdueFristen(state, today).map((t) => monthChip(t, true)) : []), ...L.todosOnDate(state, iso, today).map((t) => monthChip(t))];
+    const chips = [...(iso === today ? L.overdueFristen(state, today).map((t) => monthChip(t, true)) : []), ...L.todosOnDate(state, iso).map((t) => monthChip(t))];
     for (const r of L.virtualOn(state, iso, today)) {
       chips.push(h('li', { class: 'mchip virtual', title: 'Wiederkehrende Aufgabe', onclick: (e) => { e.stopPropagation(); openRule(r.id); } }, h('span', { class: 'mtext' }, r.text)));
     }
@@ -4227,7 +4239,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   }
 
   function plannedColumn(p) {
-    const items = h('ul', { class: 'items' }, L.plannedForProject(state, p.id, today).map((t) => todoItem(t, { datePrefix: true })));
+    const items = h('ul', { class: 'items' }, L.plannedForProject(state, p.id).map((t) => todoItem(t, { datePrefix: true })));
     for (const r of state.recurs.filter((x) => x.projectId === p.id)) {
       items.append(h('li', { class: 'todo virtual', title: 'Wiederkehrende Aufgabe – anklicken für Details', onclick: () => openRule(r.id) },
         h('span', { class: 'check ghost', 'aria-hidden': 'true' }, icon('check')),
@@ -4272,7 +4284,7 @@ dialog.drawer.left.slide-out { animation-name: drawer-out-left; }
   }
 
   function listColumn(l) {
-    const items = h('ul', { class: 'items' }, (l.deadline ? L.fristenOf(state, l.id, today) : l.followup ? L.followOf(state, l.id, today) : L.todosInList(state, l.id, today)).map((t) => todoItem(t, l.deadline || l.followup ? { datePrefix: true } : {})));
+    const items = h('ul', { class: 'items' }, (l.deadline ? L.fristenOf(state, l.id) : l.followup ? L.followOf(state, l.id) : L.todosInList(state, l.id)).map((t) => todoItem(t, l.deadline || l.followup ? { datePrefix: true } : {})));
     let headContent;
     if (ui.renamingList === l.id) {
       const inp = h('input', { class: 'head-input', type: 'text', maxlength: '40', 'data-focus': 'rename', 'aria-label': 'Listenname' });
